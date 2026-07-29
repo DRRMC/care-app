@@ -291,36 +291,51 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
     }
 
     async function fetchAndSyncToken() {
-      const tokenDisplay = document.getElementById("token-display");
-      tokenDisplay.textContent = "Registering Service Worker...";
+    const tokenDisplay = document.getElementById("token-display");
+    tokenDisplay.textContent = "Registering Service Worker...";
 
-      try {
-        await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-        const swReg = await navigator.serviceWorker.ready;
+    try {
+      // 1. Clean and sanitize VAPID Key automatically (removes quotes and spaces)
+      const cleanVapidKey = String(VAPID_KEY).trim().replace(/['"\s]/g, '');
 
-        tokenDisplay.textContent = "Generating FCM Token...";
+      if (!cleanVapidKey || cleanVapidKey.length < 50) {
+        throw new Error("VAPID_KEY is missing or invalid. Please check your Firebase Console keys.");
+      }
 
-        const token = await messaging.getToken({
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: swReg
+      // 2. Register Service Worker
+      await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+      const swReg = await navigator.serviceWorker.ready;
+
+      tokenDisplay.textContent = "Generating FCM Token...";
+
+      // 3. Request FCM Token with Clean VAPID Key
+      const token = await messaging.getToken({
+        vapidKey: cleanVapidKey,
+        serviceWorkerRegistration: swReg
+      });
+
+      if (token) {
+        tokenDisplay.textContent = token;
+
+        // 4. Send token to Google Sheets Database
+        const memberIdToUse = currentMember ? currentMember.member_id : "15512";
+        await sendToBackend({
+          action: "registerDevice",
+          memberId: memberIdToUse,
+          token: token,
+          deviceType: detectDevice(),
+          browser: detectBrowser()
         });
 
-        if (token) {
-          tokenDisplay.textContent = token;
-
-          // Link token to the 5-Digit Member ID
-          await sendToBackend({
-            action: "registerDevice",
-            memberId: currentMember.member_id,
-            token: token,
-            deviceType: detectDevice(),
-            browser: detectBrowser()
-          });
-        }
-      } catch (err) {
-        tokenDisplay.textContent = "Token Sync Error: " + err.message;
+        console.log("Token successfully synchronized with Google Sheets!");
+      } else {
+        tokenDisplay.textContent = "Failed to generate FCM Token.";
       }
+    } catch (err) {
+      console.error("Token Fetch Error:", err);
+      tokenDisplay.textContent = "Error: " + err.message;
     }
+  }
 
     async function triggerTestAlert() {
       const token = document.getElementById("token-display").textContent;
