@@ -208,11 +208,8 @@
           <div class="form-group">
             <label for="field-branch">Branch</label>
             <select id="field-branch">
-              <option value="Main Branch">Main Branch</option>
-              <option value="North Branch">North Branch</option>
-              <option value="South Branch">South Branch</option>
-              <option value="East Branch">East Branch</option>
-              <option value="West Branch">West Branch</option>
+              <option value="">-- Select Branch --</option>
+              <!-- Options Central Office and B0001 - B1863 will be automatically generated here -->
             </select>
           </div>
         </div>
@@ -323,11 +320,36 @@
     let currentMember = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      const savedMemberId = localStorage.getItem("care_member_id");
-      if (savedMemberId) {
-        document.getElementById("input-member-id").value = savedMemberId;
-      }
-    });
+  // Populate Branch Dropdown dynamically (Central Office + B0001 to B1863)
+  populateBranchDropdown();
+
+  const savedMemberId = localStorage.getItem("care_member_id");
+  if (savedMemberId) {
+    document.getElementById("input-member-id").value = savedMemberId;
+  }
+});
+
+function populateBranchDropdown() {
+  const select = document.getElementById("field-branch");
+  if (!select) return;
+
+  select.innerHTML = '<option value="">-- Select Branch --</option>';
+
+  // 1. Add Central Office
+  const centralOpt = document.createElement("option");
+  centralOpt.value = "Central Office";
+  centralOpt.textContent = "Central Office";
+  select.appendChild(centralOpt);
+
+  // 2. Loop B0001 to B1863
+  for (let i = 1; i <= 1863; i++) {
+    const code = "B" + String(i).padStart(4, '0'); // Formats 1 to "0001" -> "B0001"
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = code;
+    select.appendChild(opt);
+  }
+}
 
     // UX HELPERS: BUTTON LOADING SPINNER & CUSTOM MODALS
     function setBtnLoading(btnId, isLoading, originalText) {
