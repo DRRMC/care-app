@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#d32f2f">
   
@@ -52,12 +51,37 @@
     .hidden { display: none !important; }
 
     .alert-banner { background: #ffebee; border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px; margin-bottom: 14px; font-size: 0.85rem; color: #b71c1c; }
+
+    /* ONBOARDING MODAL STYLES */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding: 16px;
+    }
+    .modal-box {
+      background: white; border-radius: 12px; padding: 24px; text-align: center;
+      max-width: 400px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 </head>
 <body>
+
+  <!-- AUTOMATIC EMERGENCY ONBOARDING MODAL -->
+  <div id="modal-onboarding" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div style="font-size: 3rem; margin-bottom: 10px;">🚨</div>
+      <h2 style="color: #b71c1c; font-size: 1.3rem;">MAG-SUBSCRIBE SA EMERGENCY ALERTS</h2>
+      <p style="font-size: 0.9rem; color: #444; margin: 12px 0;">
+        Upang makatanggap ng direktang abiso mula sa Cooperative DRRMC kapag may <strong>Bagyo, Baha, o Lindol</strong>, paki-pindot ang button sa ibaba at piliin ang <strong>"ALLOW"</strong>.
+      </p>
+      <button class="btn" style="background: #b71c1c; padding: 14px; font-size: 1.1rem; font-weight: bold;" onclick="acceptOnboardingPush()">
+        🔔 PAGANAHIN ANG EMERGENCY ALERTS NOW
+      </button>
+    </div>
+  </div>
 
   <div class="header">
     <h1>CARE DRRMC</h1>
@@ -169,26 +193,26 @@
       </div>
 
       <!-- LIVE MEMBER EMERGENCY STATUS MONITOR -->
-    <div class="card">
-      <h2>Live Member Safety & SOS Feed</h2>
-      <button class="btn-broadcast" style="background: #1976d2; padding: 10px; font-size: 0.9rem; margin-bottom: 12px;" onclick="loadSafetyLogs()">
-        🔄 Refresh Safety Logs
-      </button>
+      <div class="card">
+        <h2>Live Member Safety & SOS Feed</h2>
+        <button class="btn" style="background: #1976d2; padding: 10px; font-size: 0.9rem; margin-bottom: 12px;" onclick="loadSafetyLogs()">
+          🔄 Refresh Safety Logs
+        </button>
 
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-        <thead>
-          <tr style="background: #eceff1; text-align: left;">
-            <th style="padding: 8px;">Member ID</th>
-            <th style="padding: 8px;">Status</th>
-            <th style="padding: 8px;">GPS Location</th>
-            <th style="padding: 8px;">Time</th>
-          </tr>
-        </thead>
-        <tbody id="safety-logs-body">
-          <tr><td colspan="4" style="padding: 12px; text-align: center; color: #777;">Click refresh to load member responses.</td></tr>
-        </tbody>
-      </table>
-    </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #eceff1; text-align: left;">
+              <th style="padding: 8px;">Member ID</th>
+              <th style="padding: 8px;">Status</th>
+              <th style="padding: 8px;">GPS Location</th>
+              <th style="padding: 8px;">Time</th>
+            </tr>
+          </thead>
+          <tbody id="safety-logs-body">
+            <tr><td colspan="4" style="padding: 12px; text-align: center; color: #777;">Click refresh to load member responses.</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- SYSTEM DIAGNOSTICS CARD -->
       <div class="card">
@@ -209,17 +233,16 @@
     // -------------------------------------------------------------
     // CONFIGURATION
     // -------------------------------------------------------------
-const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
+    const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC3oVT1UjGLksc7pws6GMSkZC2L0Puj9Mk",
-  authDomain: "care-drrmc-alerts.firebaseapp.com",
-  projectId: "care-drrmc-alerts",
-  storageBucket: "care-drrmc-alerts.firebasestorage.app",
-  messagingSenderId: "219371503949",
-  appId: "1:219371503949:web:423a6901e9f926c14b3704",
-  measurementId: "G-J80QY9Y1LE"
-
+      authDomain: "care-drrmc-alerts.firebaseapp.com",
+      projectId: "care-drrmc-alerts",
+      storageBucket: "care-drrmc-alerts.firebasestorage.app",
+      messagingSenderId: "219371503949",
+      appId: "1:219371503949:web:423a6901e9f926c14b3704",
+      measurementId: "G-J80QY9Y1LE"
     };
 
     const VAPID_KEY = "BLcDdosDD6sfwNQnzhu5IR-MlaNP-IZlG5uaJbBuqx_JHTYLeN643eHILY4e2oMTk8OXIK5BFFkKeiLUtMopRgc";
@@ -238,16 +261,20 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
       if (savedMemberId) {
         document.getElementById("input-member-id").value = savedMemberId;
       }
+
+      // Check notification permission on page load
+      if (Notification.permission === "default") {
+        document.getElementById("modal-onboarding").classList.remove("hidden");
+      }
     });
 
-    // Automatically format ID input to 5 digits with leading zeros
     document.getElementById("input-member-id").addEventListener("blur", function() {
       this.value = formatToFiveDigits(this.value);
     });
 
     function formatToFiveDigits(val) {
       if (!val) return "00000";
-      let cleaned = val.replace(/\D/g, ''); // Numeric only
+      let cleaned = val.replace(/\D/g, '');
       while (cleaned.length < 5) cleaned = "0" + cleaned;
       if (cleaned.length > 5) cleaned = cleaned.substring(cleaned.length - 5);
       return cleaned;
@@ -271,11 +298,15 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
         document.getElementById("view-login").classList.add("hidden");
         document.getElementById("view-dashboard").classList.remove("hidden");
         
-        // Auto check / register FCM push token for this member ID
         await checkAndRegisterFCM();
       } else {
         alert("Login Error: " + res.error);
       }
+    }
+
+    async function acceptOnboardingPush() {
+      document.getElementById("modal-onboarding").classList.add("hidden");
+      await enablePushNotifications();
     }
 
     async function loadSafetyLogs() {
@@ -340,45 +371,45 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
     }
 
     async function sendSafetyStatus(type) {
-    if (!currentMember) {
-      alert("Please login with your Member ID first!");
-      return;
-    }
-
-    let lat = null, lng = null;
-
-    if (type === "SOS_HELP" && navigator.geolocation) {
-      alert("Getting your GPS location for DRRMC Emergency Rescuers...");
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-        });
-        lat = position.coords.latitude;
-        lng = position.coords.longitude;
-      } catch (e) {
-        console.warn("GPS Location not available:", e.message);
+      if (!currentMember) {
+        alert("Please login with your Member ID first!");
+        return;
       }
-    }
 
-    const payload = {
-      action: "sendEmergencyStatus",
-      memberId: currentMember.member_id,
-      statusType: type,
-      latitude: lat,
-      longitude: lng
-    };
+      let lat = null, lng = null;
 
-    const res = await sendToBackend(payload);
-    if (res.success) {
-      if (type === "SAFE") {
-        alert("💚 Thank you! Your 'I'M SAFE' status has been registered with DRRMC.");
+      if (type === "SOS_HELP" && navigator.geolocation) {
+        alert("Getting your GPS location for DRRMC Emergency Rescuers...");
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+          });
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        } catch (e) {
+          console.warn("GPS Location not available:", e.message);
+        }
+      }
+
+      const payload = {
+        action: "sendEmergencyStatus",
+        memberId: currentMember.member_id,
+        statusType: type,
+        latitude: lat,
+        longitude: lng
+      };
+
+      const res = await sendToBackend(payload);
+      if (res.success) {
+        if (type === "SAFE") {
+          alert("💚 Thank you! Your 'I'M SAFE' status has been registered with DRRMC.");
+        } else {
+          alert("🚨 SOS EMERGENCY DISPATCHED!\n\nDRRMC Rescuers have received your emergency location request.");
+        }
       } else {
-        alert("🚨 SOS EMERGENCY DISPATCHED!\n\nDRRMC Rescuers have received your emergency location request.");
+        alert("Error logging status: " + res.error);
       }
-    } else {
-      alert("Error logging status: " + res.error);
     }
-  }
 
     async function checkAndRegisterFCM() {
       const badge = document.getElementById("badge-perm");
@@ -404,51 +435,47 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
     }
 
     async function fetchAndSyncToken() {
-    const tokenDisplay = document.getElementById("token-display");
-    tokenDisplay.textContent = "Registering Service Worker...";
+      const tokenDisplay = document.getElementById("token-display");
+      tokenDisplay.textContent = "Registering Service Worker...";
 
-    try {
-      // 1. Clean and sanitize VAPID Key automatically (removes quotes and spaces)
-      const cleanVapidKey = String(VAPID_KEY).trim().replace(/['"\s]/g, '');
+      try {
+        const cleanVapidKey = String(VAPID_KEY).trim().replace(/['"\s]/g, '');
 
-      if (!cleanVapidKey || cleanVapidKey.length < 50) {
-        throw new Error("VAPID_KEY is missing or invalid. Please check your Firebase Console keys.");
-      }
+        if (!cleanVapidKey || cleanVapidKey.length < 50) {
+          throw new Error("VAPID_KEY is missing or invalid. Please check your Firebase Console keys.");
+        }
 
-      // 2. Register Service Worker
-      await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-      const swReg = await navigator.serviceWorker.ready;
+        await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        const swReg = await navigator.serviceWorker.ready;
 
-      tokenDisplay.textContent = "Generating FCM Token...";
+        tokenDisplay.textContent = "Generating FCM Token...";
 
-      // 3. Request FCM Token with Clean VAPID Key
-      const token = await messaging.getToken({
-        vapidKey: cleanVapidKey,
-        serviceWorkerRegistration: swReg
-      });
-
-      if (token) {
-        tokenDisplay.textContent = token;
-
-        // 4. Send token to Google Sheets Database
-        const memberIdToUse = currentMember ? currentMember.member_id : "15512";
-        await sendToBackend({
-          action: "registerDevice",
-          memberId: memberIdToUse,
-          token: token,
-          deviceType: detectDevice(),
-          browser: detectBrowser()
+        const token = await messaging.getToken({
+          vapidKey: cleanVapidKey,
+          serviceWorkerRegistration: swReg
         });
 
-        console.log("Token successfully synchronized with Google Sheets!");
-      } else {
-        tokenDisplay.textContent = "Failed to generate FCM Token.";
+        if (token) {
+          tokenDisplay.textContent = token;
+
+          const memberIdToUse = currentMember ? currentMember.member_id : "15512";
+          await sendToBackend({
+            action: "registerDevice",
+            memberId: memberIdToUse,
+            token: token,
+            deviceType: detectDevice(),
+            browser: detectBrowser()
+          });
+
+          console.log("Token successfully synchronized with Google Sheets!");
+        } else {
+          tokenDisplay.textContent = "Failed to generate FCM Token.";
+        }
+      } catch (err) {
+        console.error("Token Fetch Error:", err);
+        tokenDisplay.textContent = "Error: " + err.message;
       }
-    } catch (err) {
-      console.error("Token Fetch Error:", err);
-      tokenDisplay.textContent = "Error: " + err.message;
     }
-  }
 
     async function triggerTestAlert() {
       const token = document.getElementById("token-display").textContent;
