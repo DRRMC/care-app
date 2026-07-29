@@ -14,10 +14,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Handles background push notifications when browser/app is closed
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.notification.title || '🚨 EMERGENCY ALERT';
   const notificationOptions = {
     body: payload.notification.body,
     icon: 'https://img.icons8.com/color/96/000000/siren.png',
@@ -32,6 +33,6 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data.click_action || '/')
+    clients.openWindow(event.notification.data ? event.notification.data.click_action || '/' : '/')
   );
 });
