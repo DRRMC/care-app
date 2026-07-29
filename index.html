@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CARE - DRRMC Emergency Network</title>
+  <style>
+    :root {
+      --primary: #d32f2f;
+      --primary-dark: #9a0007;
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #212121;
+      --border: #e0e0e0;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
+    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 24px; text-align: center; }
+    .header h1 { font-size: 1.6rem; font-weight: 700; }
+    .header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
+    .container { max-width: 480px; margin: 20px auto; padding: 0 16px; }
+    .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .card h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--primary-dark); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; }
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #1976d2; }
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    .status-badge.granted { background: #e8f5e9; color: #2e7d32; }
+    .status-badge.denied { background: #ffebee; color: #c62828; }
+    .status-badge.default { background: #fff3e0; color: #ef6c00; }
+    .token-box { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.72rem; word-break: break-all; max-height: 80px; overflow-y: auto; margin-top: 8px; }
+  </style>
+
+  <!-- Firebase Web SDK Compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+</head>
+<body>
+
+  <div class="header">
+    <h1>CARE DRRMC</h1>
+    <p>Cooperative Alert and Response for Emergencies</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Member Registration</h2>
+      <div class="form-group">
+        <label for="member-id">Member ID</label>
+        <input type="text" id="member-id" value="MEM-10001" placeholder="Enter Member ID">
+      </div>
+
+      <div class="form-group">
+        <label>Notification Permission:</label>
+        <span id="permission-status" class="status-badge default">Checking...</span>
+      </div>
+
+      <button id="btn-request" class="btn" onclick="enablePushNotifications()">
+        🔔 Enable Push Notifications
+      </button>
+
+      <div style="margin-top: 15px;">
+        <label style="font-size: 0.8rem; font-weight: 600;">Device FCM Token:</label>
+        <div id="token-display" class="token-box">Not Registered</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>System Diagnostics</h2>
+      <button id="btn-test" class="btn btn-secondary" style="display:none;" onclick="triggerTestAlert()">
+        🚨 Dispatch Test Emergency Alert
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // CONFIGURATION (REPLACE WITH YOUR EXACT KEYS)
+    // -------------------------------------------------------------
+    const GAS_BACKEND_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const VAPID_KEY = "YOUR_PUBLIC_VAPID_KEY";
+
+    // -------------------------------------------------------------
+    // APP LOGIC
+    // -------------------------------------------------------------
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    document.addEventListener("DOMContentLoaded", checkPermission);
+
+    function checkPermission() {
+      const statusEl = document.getElementById("permission-status");
+      const perm = Notification.permission;
+      statusEl.textContent = perm.toUpperCase();
+      statusEl.className = `status-badge ${perm}`;
+
+      if (perm === "granted") {
+        document.getElementById("btn-request").style.display = "none";
+        document.getElementById("btn-test").style.display = "block";
+      }
+    }
+
+    async function enablePushNotifications() {
+      try {
+        // Direct top-level prompt! No iframe restriction!
+        const permission = await Notification.requestPermission();
+        checkPermission();
+
+        if (permission === "granted") {
+          const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+          if (token) {
+            document.getElementById("token-display").textContent = token;
+            await sendToBackend({
+              action: "registerDevice",
+              memberId: document.getElementById("member-id").value,
+              token: token,
+              deviceType: detectDevice(),
+              browser: detectBrowser()
+            });
+            alert("Device successfully registered for Emergency Alerts!");
+          }
+        } else {
+          alert("Permission was not granted.");
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    async function triggerTestAlert() {
+      const token = document.getElementById("token-display").textContent;
+      const res = await sendToBackend({ action: "sendTestAlert", token: token });
+      if (res.success && res.response.success) {
+        alert("🚨 Test Alert Sent Successfully!");
+      } else {
+        alert("Alert dispatch failed: " + JSON.stringify(res));
+      }
+    }
+
+    async function sendToBackend(payload) {
+      const response = await fetch(GAS_BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    }
+
+    function detectDevice() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "ANDROID";
+      if (/iPhone|iPad/.test(ua)) return "IOS";
+      if (/Win/.test(ua)) return "WINDOWS";
+      if (/Mac/.test(ua)) return "MAC";
+      return "DESKTOP";
+    }
+
+    function detectBrowser() {
+      const ua = navigator.userAgent;
+      if (ua.includes("Chrome")) return "Chrome";
+      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+      if (ua.includes("Firefox")) return "Firefox";
+      return "Browser";
+    }
+  </script>
+</body>
+</html>
