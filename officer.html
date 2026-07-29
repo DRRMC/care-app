@@ -206,10 +206,33 @@
     document.addEventListener("DOMContentLoaded", loadSafetyLogs);
 
     function handleTargetChange() {
-      const type = document.getElementById("target-type").value;
-      const group = document.getElementById("target-value-group");
-      group.classList.toggle("hidden", type === "ALL");
+  const type = document.getElementById("target-type").value;
+  const group = document.getElementById("target-value-group");
+  const label = document.getElementById("target-value-label");
+  const input = document.getElementById("target-value");
+
+  if (type === "ALL") {
+    group.classList.add("hidden");
+  } else {
+    group.classList.remove("hidden");
+    if (type === "BRANCH") {
+      label.textContent = "Enter Branch (e.g. Central Office or B0001)";
+      input.placeholder = "e.g. Central Office or B0123";
     }
+    if (type === "PROVINCE") {
+      label.textContent = "Enter Province";
+      input.placeholder = "e.g. Batangas";
+    }
+    if (type === "MUNICIPALITY") {
+      label.textContent = "Enter Municipality";
+      input.placeholder = "e.g. Lipa City";
+    }
+    if (type === "MEMBER") {
+      label.textContent = "Enter 5-Digit Member ID";
+      input.placeholder = "e.g. 00552";
+    }
+  }
+}
 
     function setBroadcastLoading(isLoading) {
       const btn = document.getElementById("btn-broadcast");
