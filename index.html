@@ -3,39 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CARE - DRRMC Emergency Network</title>
+  <title>CARE - Member Emergency Portal</title>
   <style>
     :root {
       --primary: #d32f2f;
       --primary-dark: #9a0007;
+      --secondary: #1976d2;
+      --success: #2e7d32;
       --bg: #f4f6f8;
       --surface: #ffffff;
       --text: #212121;
-      --border: #e0e0e0;
+      --border: #cccccc;
       --radius: 8px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
-    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 24px; text-align: center; }
-    .header h1 { font-size: 1.6rem; font-weight: 700; }
-    .header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
-    .container { max-width: 480px; margin: 20px auto; padding: 0 16px; }
+    
+    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px; text-align: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 700; }
+    .header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+
+    .container { max-width: 500px; margin: 16px auto; padding: 0 16px; }
     .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .card h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--primary-dark); }
+    .card h2 { font-size: 1.1rem; margin-bottom: 14px; color: var(--primary-dark); display: flex; align-items: center; justify-content: space-between; }
+    
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; }
-    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: var(--primary-dark); }
-    .btn-secondary { background: #1976d2; }
-    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-    .status-badge.granted { background: #e8f5e9; color: #2e7d32; }
-    .status-badge.denied { background: #ffebee; color: #c62828; }
-    .status-badge.default { background: #fff3e0; color: #ef6c00; }
-    .token-box { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.72rem; word-break: break-all; max-height: 80px; overflow-y: auto; margin-top: 8px; }
+    .btn-secondary { background: var(--secondary); }
+    .btn-success { background: var(--success); }
+    
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    .badge.active { background: #e8f5e9; color: #2e7d32; }
+    .badge.pending { background: #fff3e0; color: #ef6c00; }
+    .badge.denied { background: #ffebee; color: #c62828; }
+
+    .token-box { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.72rem; word-break: break-all; max-height: 70px; overflow-y: auto; margin-top: 8px; }
+    .hidden { display: none !important; }
+
+    .alert-banner { background: #ffebee; border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px; margin-bottom: 14px; font-size: 0.85rem; color: #b71c1c; }
   </style>
 
-  <!-- Firebase Web SDK Compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 </head>
@@ -47,41 +61,112 @@
   </div>
 
   <div class="container">
-    <div class="card">
-      <h2>Member Registration</h2>
+
+    <!-- VIEW 1: MEMBER LOGIN / LOOKUP -->
+    <div id="view-login" class="card">
+      <h2>Member Identification</h2>
+      <p style="font-size: 0.85rem; color: #666; margin-bottom: 14px;">
+        Enter your 5-Digit Cooperative Member ID (e.g., 00552, 18243).
+      </p>
       <div class="form-group">
-        <label for="member-id">Member ID</label>
-        <input type="text" id="member-id" value="MEM-10001" placeholder="Enter Member ID">
+        <label for="input-member-id">Member ID (5 Digits)</label>
+        <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 00552 or 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: bold;">
       </div>
-
-      <div class="form-group">
-        <label>Notification Permission:</label>
-        <span id="permission-status" class="status-badge default">Checking...</span>
-      </div>
-
-      <button id="btn-request" class="btn" onclick="enablePushNotifications()">
-        🔔 Enable Push Notifications
-      </button>
-
-      <div style="margin-top: 15px;">
-        <label style="font-size: 0.8rem; font-weight: 600;">Device FCM Token:</label>
-        <div id="token-display" class="token-box">Not Registered</div>
-      </div>
+      <button class="btn" onclick="handleMemberLogin()">Access Emergency Portal</button>
     </div>
 
-    <div class="card">
-      <h2>System Diagnostics</h2>
-      <button id="btn-test" class="btn btn-secondary" style="display:none;" onclick="triggerTestAlert()">
-        🚨 Dispatch Test Emergency Alert
-      </button>
+    <!-- VIEW 2: MEMBER DASHBOARD & DEMOGRAPHICS -->
+    <div id="view-dashboard" class="hidden">
+      
+      <!-- PROFILE & GEOGRAPHIC CARD -->
+      <div class="card">
+        <h2>
+          <span>Member Profile</span>
+          <span id="badge-member-id" class="badge active">ID: 00000</span>
+        </h2>
+
+        <div class="form-group">
+          <label for="field-fullname">Full Name</label>
+          <input type="text" id="field-fullname" placeholder="First Name Last Name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="field-mobile">Mobile Number</label>
+            <input type="tel" id="field-mobile" placeholder="09171234567">
+          </div>
+          <div class="form-group">
+            <label for="field-branch">Branch</label>
+            <select id="field-branch">
+              <option value="Main Branch">Main Branch</option>
+              <option value="North Branch">North Branch</option>
+              <option value="South Branch">South Branch</option>
+              <option value="East Branch">East Branch</option>
+              <option value="West Branch">West Branch</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="field-province">Province</label>
+          <input type="text" id="field-province" placeholder="e.g. Batangas">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="field-municipality">Municipality / City</label>
+            <input type="text" id="field-municipality" placeholder="e.g. Lipa City">
+          </div>
+          <div class="form-group">
+            <label for="field-barangay">Barangay</label>
+            <input type="text" id="field-barangay" placeholder="e.g. Barangay 1">
+          </div>
+        </div>
+
+        <button class="btn btn-success" onclick="saveProfileChanges()">Save & Update Profile</button>
+      </div>
+
+      <!-- DEVICE & PUSH NOTIFICATION STATUS CARD -->
+      <div class="card">
+        <h2>
+          <span>Emergency Alerts</span>
+          <span id="badge-perm" class="badge pending">CHECKING</span>
+        </h2>
+
+        <div class="alert-banner">
+          Keep Push Notifications enabled so DRRMC Officers can reach you during Typhoon, Flood, and Landslide emergencies.
+        </div>
+
+        <button id="btn-enable-push" class="btn" onclick="enablePushNotifications()">
+          🔔 Enable Push Notifications
+        </button>
+
+        <div style="margin-top: 14px;">
+          <label style="font-size: 0.8rem; font-weight:600;">Registered FCM Device Token:</label>
+          <div id="token-display" class="token-box">Not Registered</div>
+        </div>
+      </div>
+
+      <!-- SYSTEM DIAGNOSTICS CARD -->
+      <div class="card">
+        <h2>System Diagnostics</h2>
+        <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()">
+          🚨 Dispatch Test Push Notification
+        </button>
+        <button class="btn" style="background:#757575; margin-top:10px;" onclick="switchUser()">
+          Switch Member ID
+        </button>
+      </div>
+
     </div>
+
   </div>
 
   <script>
     // -------------------------------------------------------------
-    // CONFIGURATION (REPLACE WITH YOUR EXACT KEYS)
+    // CONFIGURATION
     // -------------------------------------------------------------
-    const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
+const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC3oVT1UjGLksc7pws6GMSkZC2L0Puj9Mk",
@@ -97,135 +182,190 @@
     const VAPID_KEY = "BLcDdosDD6sfwNQnzhu5IR-MlaNP-IZlG5uaJbBuqx_JHTYLeN643eHILY4e2oMTk8OXIK5BFFkKeiLUtMopRgc";
 
     // -------------------------------------------------------------
-  // APP INITIALIZATION
-  // -------------------------------------------------------------
-  firebase.initializeApp(firebaseConfig);
-  const messaging = firebase.messaging();
+    // INITIALIZATION & STATE
+    // -------------------------------------------------------------
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    await checkAndRegisterPermission();
-  });
+    let currentMember = null;
 
-  async function checkAndRegisterPermission() {
-    const statusEl = document.getElementById("permission-status");
-    const perm = Notification.permission;
-    statusEl.textContent = perm.toUpperCase();
-    statusEl.className = `status-badge ${perm}`;
+    document.addEventListener("DOMContentLoaded", () => {
+      // Auto-fill last used Member ID if stored locally
+      const savedMemberId = localStorage.getItem("care_member_id");
+      if (savedMemberId) {
+        document.getElementById("input-member-id").value = savedMemberId;
+      }
+    });
 
-    if (perm === "granted") {
-      document.getElementById("btn-request").style.display = "none";
-      document.getElementById("btn-test").style.display = "block";
+    // Automatically format ID input to 5 digits with leading zeros
+    document.getElementById("input-member-id").addEventListener("blur", function() {
+      this.value = formatToFiveDigits(this.value);
+    });
+
+    function formatToFiveDigits(val) {
+      if (!val) return "00000";
+      let cleaned = val.replace(/\D/g, ''); // Numeric only
+      while (cleaned.length < 5) cleaned = "0" + cleaned;
+      if (cleaned.length > 5) cleaned = cleaned.substring(cleaned.length - 5);
+      return cleaned;
+    }
+
+    async function handleMemberLogin() {
+      const rawId = document.getElementById("input-member-id").value;
+      const formattedId = formatToFiveDigits(rawId);
       
-      // Auto-fetch token if permission is already granted!
-      await fetchAndRegisterToken();
-    } else {
-      document.getElementById("btn-request").style.display = "block";
-      document.getElementById("btn-test").style.display = "none";
-    }
-  }
+      document.getElementById("input-member-id").value = formattedId;
+      localStorage.setItem("care_member_id", formattedId);
 
-  async function enablePushNotifications() {
-    try {
-      const permission = await Notification.requestPermission();
-      await checkAndRegisterPermission();
-    } catch (err) {
-      alert("Error requesting permission: " + err.message);
-    }
-  }
-
-  async function fetchAndRegisterToken() {
-    const tokenDisplay = document.getElementById("token-display");
-    tokenDisplay.textContent = "Registering Service Worker...";
-
-    try {
-      // 1. Register the Service Worker script
-      await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-
-      // 2. WAIT until the Service Worker is 100% ACTIVE in the browser
-      const swRegistration = await navigator.serviceWorker.ready;
-
-      tokenDisplay.textContent = "Generating FCM Token...";
-
-      // 3. Get FCM Token safely
-      const token = await messaging.getToken({
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swRegistration
+      const res = await sendToBackend({
+        action: "getOrRegisterMember",
+        memberId: formattedId
       });
 
-      if (token) {
-        tokenDisplay.textContent = token;
+      if (res.success) {
+        currentMember = res.member;
+        populateDashboard(currentMember);
+        document.getElementById("view-login").classList.add("hidden");
+        document.getElementById("view-dashboard").classList.remove("hidden");
+        
+        // Auto check / register FCM push token for this member ID
+        await checkAndRegisterFCM();
+      } else {
+        alert("Login Error: " + res.error);
+      }
+    }
 
-        // 4. Send token to Google Sheets Database
-        const response = await sendToBackend({
-          action: "registerDevice",
-          memberId: document.getElementById("member-id").value || "MEM-10001",
-          token: token,
-          deviceType: detectDevice(),
-          browser: detectBrowser()
+    function populateDashboard(member) {
+      document.getElementById("badge-member-id").textContent = "ID: " + member.member_id;
+      document.getElementById("field-fullname").value = member.full_name || "";
+      document.getElementById("field-mobile").value = member.mobile_number || "";
+      document.getElementById("field-branch").value = member.branch || "Main Branch";
+      document.getElementById("field-province").value = member.province || "";
+      document.getElementById("field-municipality").value = member.municipality || "";
+      document.getElementById("field-barangay").value = member.barangay || "";
+    }
+
+    async function saveProfileChanges() {
+      if (!currentMember) return;
+
+      const payload = {
+        action: "updateMemberProfile",
+        memberId: currentMember.member_id,
+        fullName: document.getElementById("field-fullname").value,
+        mobileNumber: document.getElementById("field-mobile").value,
+        branch: document.getElementById("field-branch").value,
+        province: document.getElementById("field-province").value,
+        municipality: document.getElementById("field-municipality").value,
+        barangay: document.getElementById("field-barangay").value
+      };
+
+      const res = await sendToBackend(payload);
+      if (res.success) {
+        alert("✅ Profile & Location updated successfully in Cooperative Database!");
+      } else {
+        alert("Save Error: " + res.error);
+      }
+    }
+
+    async function checkAndRegisterFCM() {
+      const badge = document.getElementById("badge-perm");
+      const perm = Notification.permission;
+      badge.textContent = perm.toUpperCase();
+      badge.className = `badge ${perm === 'granted' ? 'active' : 'denied'}`;
+
+      if (perm === "granted") {
+        document.getElementById("btn-enable-push").classList.add("hidden");
+        await fetchAndSyncToken();
+      } else {
+        document.getElementById("btn-enable-push").classList.remove("hidden");
+      }
+    }
+
+    async function enablePushNotifications() {
+      try {
+        const perm = await Notification.requestPermission();
+        await checkAndRegisterFCM();
+      } catch (err) {
+        alert("Permission Error: " + err.message);
+      }
+    }
+
+    async function fetchAndSyncToken() {
+      const tokenDisplay = document.getElementById("token-display");
+      tokenDisplay.textContent = "Registering Service Worker...";
+
+      try {
+        await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        const swReg = await navigator.serviceWorker.ready;
+
+        tokenDisplay.textContent = "Generating FCM Token...";
+
+        const token = await messaging.getToken({
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg
         });
 
-        console.log("Backend Sync Result:", response);
-      } else {
-        tokenDisplay.textContent = "Failed to generate FCM Token.";
+        if (token) {
+          tokenDisplay.textContent = token;
+
+          // Link token to the 5-Digit Member ID
+          await sendToBackend({
+            action: "registerDevice",
+            memberId: currentMember.member_id,
+            token: token,
+            deviceType: detectDevice(),
+            browser: detectBrowser()
+          });
+        }
+      } catch (err) {
+        tokenDisplay.textContent = "Token Sync Error: " + err.message;
       }
-    } catch (err) {
-      console.error("Token Fetch Error:", err);
-      tokenDisplay.textContent = "Error: " + err.message;
-    }
-  }
-
-  async function triggerTestAlert() {
-    const token = document.getElementById("token-display").textContent;
-    if (!token || token.startsWith("Error") || token === "Generating Token...") {
-      alert("No valid token registered yet!");
-      return;
     }
 
-    const btn = document.getElementById("btn-test");
-    btn.disabled = true;
-    btn.textContent = "⏳ Sending Alert via FCM v1 Engine...";
+    async function triggerTestAlert() {
+      const token = document.getElementById("token-display").textContent;
+      if (!token || token.length < 20) {
+        alert("No active FCM Token registered!");
+        return;
+      }
 
-    try {
       const res = await sendToBackend({ action: "sendTestAlert", token: token });
-      btn.disabled = false;
-      btn.textContent = "🚨 Dispatch Test Emergency Alert";
-
       if (res.success && res.response.success) {
-        alert("🚨 SUCCESS! Emergency Notification dispatched via FCM v1 API!");
+        alert("🚨 Test Alert Sent Successfully!");
       } else {
-        alert("Dispatch Failed: " + JSON.stringify(res));
+        alert("Alert dispatch failed: " + JSON.stringify(res));
       }
-    } catch(e) {
-      btn.disabled = false;
-      btn.textContent = "🚨 Dispatch Test Emergency Alert";
-      alert("Network Error: " + e.message);
     }
-  }
 
-  async function sendToBackend(payload) {
-    const response = await fetch(GAS_BACKEND_URL, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    return await response.json();
-  }
+    function switchUser() {
+      localStorage.removeItem("care_member_id");
+      location.reload();
+    }
 
-  function detectDevice() {
-    const ua = navigator.userAgent;
-    if (/android/i.test(ua)) return "ANDROID";
-    if (/iPhone|iPad/.test(ua)) return "IOS";
-    if (/Win/.test(ua)) return "WINDOWS";
-    if (/Mac/.test(ua)) return "MAC";
-    return "DESKTOP";
-  }
+    async function sendToBackend(payload) {
+      const response = await fetch(GAS_BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    }
 
-  function detectBrowser() {
-    const ua = navigator.userAgent;
-    if (ua.includes("Chrome")) return "Chrome";
-    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
-    if (ua.includes("Firefox")) return "Firefox";
-    return "Browser";
-  }
-</script>
+    function detectDevice() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "ANDROID";
+      if (/iPhone|iPad/.test(ua)) return "IOS";
+      if (/Win/.test(ua)) return "WINDOWS";
+      if (/Mac/.test(ua)) return "MAC";
+      return "DESKTOP";
+    }
+
+    function detectBrowser() {
+      const ua = navigator.userAgent;
+      if (ua.includes("Chrome")) return "Chrome";
+      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+      if (ua.includes("Firefox")) return "Firefox";
+      return "Browser";
+    }
+  </script>
 </body>
 </html>
