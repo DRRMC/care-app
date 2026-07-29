@@ -126,6 +126,23 @@
         <button class="btn btn-success" onclick="saveProfileChanges()">Save & Update Profile</button>
       </div>
 
+      <!-- EMERGENCY RESPONSE CARD -->
+      <div class="card" style="border: 2px solid var(--primary);">
+        <h2>Emergency Response Status</h2>
+        <p style="font-size: 0.85rem; color: #555; margin-bottom: 12px;">
+          During an active disaster, let DRRMC Officers know your situation:
+        </p>
+        
+        <div class="form-row">
+          <button class="btn btn-success" style="padding: 14px; font-size: 1.1rem;" onclick="sendSafetyStatus('SAFE')">
+            💚 I'M SAFE
+          </button>
+          <button class="btn" style="background: #b71c1c; padding: 14px; font-size: 1.1rem;" onclick="sendSafetyStatus('SOS_HELP')">
+            🚨 SOS NEED HELP
+          </button>
+        </div>
+      </div>
+
       <!-- DEVICE & PUSH NOTIFICATION STATUS CARD -->
       <div class="card">
         <h2>
@@ -266,6 +283,47 @@ const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiV
         alert("Save Error: " + res.error);
       }
     }
+
+    async function sendSafetyStatus(type) {
+    if (!currentMember) {
+      alert("Please login with your Member ID first!");
+      return;
+    }
+
+    let lat = null, lng = null;
+
+    if (type === "SOS_HELP" && navigator.geolocation) {
+      alert("Getting your GPS location for DRRMC Emergency Rescuers...");
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } catch (e) {
+        console.warn("GPS Location not available:", e.message);
+      }
+    }
+
+    const payload = {
+      action: "sendEmergencyStatus",
+      memberId: currentMember.member_id,
+      statusType: type,
+      latitude: lat,
+      longitude: lng
+    };
+
+    const res = await sendToBackend(payload);
+    if (res.success) {
+      if (type === "SAFE") {
+        alert("💚 Thank you! Your 'I'M SAFE' status has been registered with DRRMC.");
+      } else {
+        alert("🚨 SOS EMERGENCY DISPATCHED!\n\nDRRMC Rescuers have received your emergency location request.");
+      }
+    } else {
+      alert("Error logging status: " + res.error);
+    }
+  }
 
     async function checkAndRegisterFCM() {
       const badge = document.getElementById("badge-perm");
