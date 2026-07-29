@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#d32f2f">
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CARE - DRRMC Officer Broadcast Command Center</title>
@@ -25,9 +21,9 @@
     .header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; }
     .header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
 
-    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
+    .container { max-width: 650px; margin: 20px auto; padding: 0 16px; }
     .card { background: var(--surface); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
-    .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--primary-dark); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--primary-dark); border-bottom: 2px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
 
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
@@ -38,6 +34,7 @@
 
     .btn-broadcast { width: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white; border: none; padding: 16px; border-radius: var(--radius); font-size: 1.2rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(183, 28, 28, 0.3); transition: transform 0.1s; }
     .btn-broadcast:active { transform: scale(0.98); }
+    .btn-refresh { background: #1976d2; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
     .summary-box { background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: var(--radius); padding: 16px; margin-top: 16px; color: #1b5e20; }
     .summary-box h3 { font-size: 1.1rem; margin-bottom: 8px; }
@@ -48,10 +45,12 @@
 
   <div class="header">
     <h1>🚨 CARE DRRMC COMMAND CENTER</h1>
-    <p>Emergency Notification & Dispatch Console</p>
+    <p>Emergency Notification & Rescuer Dispatch Console</p>
   </div>
 
   <div class="container">
+
+    <!-- CARD 1: BROADCAST EMERGENCY ALERT -->
     <div class="card">
       <h2>Create Emergency Alert Broadcast</h2>
 
@@ -118,18 +117,43 @@
         <p><strong>Successfully Delivered:</strong> <span id="sum-sent">0</span></p>
         <p><strong>Failed Dispatches:</strong> <span id="sum-failed">0</span></p>
       </div>
-
     </div>
+
+    <!-- CARD 2: LIVE MEMBER SAFETY & SOS FEED FOR OFFICERS -->
+    <div class="card">
+      <h2>
+        <span>Live Member Safety & SOS Feed</span>
+        <button class="btn-refresh" onclick="loadSafetyLogs()">🔄 Refresh</button>
+      </h2>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+        <thead>
+          <tr style="background: #eceff1; text-align: left;">
+            <th style="padding: 10px;">Member ID</th>
+            <th style="padding: 10px;">Status</th>
+            <th style="padding: 10px;">GPS Location</th>
+            <th style="padding: 10px;">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="safety-logs-body">
+          <tr><td colspan="4" style="padding: 14px; text-align: center; color: #777;">Click refresh to load live member status logs.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
+    document.addEventListener("DOMContentLoaded", () => {
+      loadSafetyLogs();
+    });
+
     function handleTargetChange() {
       const type = document.getElementById("target-type").value;
       const group = document.getElementById("target-value-group");
       const label = document.getElementById("target-value-label");
-      const input = document.getElementById("target-value");
 
       if (type === "ALL") {
         group.classList.add("hidden");
@@ -199,6 +223,39 @@
         }
       } catch (err) {
         alert("Network Error: " + err.message);
+      }
+    }
+
+    async function loadSafetyLogs() {
+      const tbody = document.getElementById("safety-logs-body");
+      tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>Loading live member logs...</td></tr>";
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "getEmergencyStatusLogs" })
+        }).then(r => r.json());
+
+        if (res.success && res.logs.length > 0) {
+          tbody.innerHTML = res.logs.map(log => `
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 10px; font-weight: bold;">${log.memberId}</td>
+              <td style="padding: 10px;">
+                <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; color: white; background: ${log.type === 'SAFE' ? '#2e7d32' : '#b71c1c'};">
+                  ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
+                </span>
+              </td>
+              <td style="padding: 10px;">
+                ${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 View GPS Map</a>` : 'No GPS'}
+              </td>
+              <td style="padding: 10px; font-size: 0.78rem; color: #555;">${new Date(log.time).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>No member emergency logs found yet.</td></tr>";
+        }
+      } catch(e) {
+        tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center; color:red;'>Failed to load safety logs.</td></tr>";
       }
     }
   </script>
