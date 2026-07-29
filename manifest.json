@@ -1,0 +1,21 @@
+{
+  "name": "CARE DRRMC Emergency Network",
+  "short_name": "CARE DRRMC",
+  "description": "Cooperative Alert and Response for Emergencies",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#d32f2f",
+  "theme_color": "#d32f2f",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/192/000000/siren.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/000000/siren.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
