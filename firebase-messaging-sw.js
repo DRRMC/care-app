@@ -34,7 +34,7 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const targetUrl = 'https://drrmc.github.io/care-app/';
+  const targetUrl = 'https://drrmc.github.io/drrmc-app/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
