@@ -3,65 +3,158 @@
 <head>
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#d32f2f">
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CARE - Member Emergency Portal</title>
+
   <style>
     :root {
       --primary: #d32f2f;
-      --primary-dark: #9a0007;
+      --primary-dark: #8e0000;
+      --primary-light: #ff6659;
       --secondary: #1976d2;
       --success: #2e7d32;
       --bg: #f4f6f8;
       --surface: #ffffff;
-      --text: #212121;
-      --border: #cccccc;
-      --radius: 8px;
+      --text-main: #1a1a1a;
+      --text-muted: #666666;
+      --border: #e0e0e0;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
-    
-    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px; text-align: center; }
-    .header h1 { font-size: 1.5rem; font-weight: 700; }
+    body { background-color: var(--bg); color: var(--text-main); padding-bottom: 50px; }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
 
-    .container { max-width: 500px; margin: 16px auto; padding: 0 16px; }
-    .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .card h2 { font-size: 1.1rem; margin-bottom: 14px; color: var(--primary-dark); display: flex; align-items: center; justify-content: space-between; }
-    
+    .container { max-width: 480px; margin: -15px auto 0; padding: 0 16px; position: relative; z-index: 10; }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* FORMS & INPUTS */
     .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; outline: none; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
 
-    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-secondary { background: var(--secondary); }
-    .btn-success { background: var(--success); }
-    
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    /* BUTTONS & SPINNERS */
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(211,47,47,0.3);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-secondary { background: var(--secondary); box-shadow: 0 2px 6px rgba(25,118,210,0.3); }
+    .btn-success { background: var(--success); box-shadow: 0 2px 6px rgba(46,125,50,0.3); }
+    .btn-dark { background: #424242; }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ffffff;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* BADGES & BOXES */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
     .badge.active { background: #e8f5e9; color: #2e7d32; }
     .badge.pending { background: #fff3e0; color: #ef6c00; }
     .badge.denied { background: #ffebee; color: #c62828; }
 
-    .token-box { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.72rem; word-break: break-all; max-height: 70px; overflow-y: auto; margin-top: 8px; }
+    .token-box {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.72rem;
+      word-break: break-all;
+      max-height: 60px;
+      overflow-y: auto;
+      border: 1px dashed var(--border);
+      margin-top: 6px;
+    }
     .hidden { display: none !important; }
 
-    .alert-banner { background: #ffebee; border-left: 4px solid var(--primary); padding: 12px; border-radius: 4px; margin-bottom: 14px; font-size: 0.85rem; color: #b71c1c; }
-
-    /* ONBOARDING MODAL STYLES */
+    /* CUSTOM MODAL POPUP */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center;
-      z-index: 9999; padding: 16px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
     }
-    .modal-box {
-      background: white; border-radius: 12px; padding: 24px; text-align: center;
-      max-width: 400px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: white; border-radius: 16px; padding: 24px; text-align: center;
+      max-width: 380px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+      transform: translateY(20px); transition: transform 0.25s ease;
     }
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+    .modal-icon { font-size: 3rem; margin-bottom: 10px; }
+    .modal-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main); }
+    .modal-body { font-size: 0.9rem; color: #555; margin-bottom: 20px; line-height: 1.4; }
+
+    /* TOAST NOTIFICATION */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: #323232; color: white; padding: 12px 24px; border-radius: 25px;
+      font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease; z-index: 10000;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -69,44 +162,33 @@
 </head>
 <body>
 
-  <!-- AUTOMATIC EMERGENCY ONBOARDING MODAL -->
-  <div id="modal-onboarding" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div style="font-size: 3rem; margin-bottom: 10px;">🚨</div>
-      <h2 style="color: #b71c1c; font-size: 1.3rem;">MAG-SUBSCRIBE SA EMERGENCY ALERTS</h2>
-      <p style="font-size: 0.9rem; color: #444; margin: 12px 0;">
-        Upang makatanggap ng direktang abiso mula sa Cooperative DRRMC kapag may <strong>Bagyo, Baha, o Lindol</strong>, paki-pindot ang button sa ibaba at piliin ang <strong>"ALLOW"</strong>.
-      </p>
-      <button class="btn" style="background: #b71c1c; padding: 14px; font-size: 1.1rem; font-weight: bold;" onclick="acceptOnboardingPush()">
-        🔔 PAGANAHIN ANG EMERGENCY ALERTS NOW
-      </button>
-    </div>
-  </div>
-
+  <!-- HEADER -->
   <div class="header">
-    <h1>CARE DRRMC</h1>
+    <h1>🚨 CARE DRRMC</h1>
     <p>Cooperative Alert and Response for Emergencies</p>
   </div>
 
   <div class="container">
 
-    <!-- VIEW 1: MEMBER LOGIN / LOOKUP -->
+    <!-- VIEW 1: MEMBER LOGIN -->
     <div id="view-login" class="card">
-      <h2>Member Identification</h2>
-      <p style="font-size: 0.85rem; color: #666; margin-bottom: 14px;">
-        Enter your 5-Digit Cooperative Member ID (e.g., 00552, 18243).
+      <h2>Member Portal Login</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Enter your 5-Digit Cooperative Member ID to access emergency services.
       </p>
       <div class="form-group">
-        <label for="input-member-id">Member ID (5 Digits)</label>
-        <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 00552 or 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: bold;">
+        <label for="input-member-id">Member ID</label>
+        <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 00552" style="font-size: 1.3rem; letter-spacing: 3px; text-align: center; font-weight: 800;">
       </div>
-      <button class="btn" onclick="handleMemberLogin()">Access Emergency Portal</button>
+      <button id="btn-login" class="btn" onclick="handleMemberLogin()">
+        <span>Access Emergency Portal</span>
+      </button>
     </div>
 
-    <!-- VIEW 2: MEMBER DASHBOARD & DEMOGRAPHICS -->
+    <!-- VIEW 2: MEMBER DASHBOARD -->
     <div id="view-dashboard" class="hidden">
       
-      <!-- PROFILE & GEOGRAPHIC CARD -->
+      <!-- PROFILE CARD -->
       <div class="card">
         <h2>
           <span>Member Profile</span>
@@ -151,54 +233,56 @@
           </div>
         </div>
 
-        <button class="btn btn-success" onclick="saveProfileChanges()">Save & Update Profile</button>
+        <button id="btn-save-profile" class="btn btn-success" onclick="saveProfileChanges()">
+          <span>Save & Update Location</span>
+        </button>
       </div>
 
       <!-- EMERGENCY RESPONSE CARD -->
       <div class="card" style="border: 2px solid var(--primary);">
-        <h2>Emergency Response Status</h2>
-        <p style="font-size: 0.85rem; color: #555; margin-bottom: 12px;">
-          During an active disaster, let DRRMC Officers know your situation:
+        <h2>Disaster Safety Signal</h2>
+        <p style="font-size: 0.85rem; color: #555; margin-bottom: 14px;">
+          Update your safety status live during active disasters:
         </p>
         
         <div class="form-row">
-          <button class="btn btn-success" style="padding: 14px; font-size: 1.1rem;" onclick="sendSafetyStatus('SAFE')">
+          <button id="btn-status-safe" class="btn btn-success" style="padding: 16px; font-size: 1rem;" onclick="sendSafetyStatus('SAFE')">
             💚 I'M SAFE
           </button>
-          <button class="btn" style="background: #b71c1c; padding: 14px; font-size: 1.1rem;" onclick="sendSafetyStatus('SOS_HELP')">
-            🚨 SOS NEED HELP
+          <button id="btn-status-sos" class="btn" style="background: var(--primary-dark); padding: 16px; font-size: 1rem;" onclick="sendSafetyStatus('SOS_HELP')">
+            🚨 SOS HELP
           </button>
         </div>
       </div>
 
-      <!-- DEVICE & PUSH NOTIFICATION STATUS CARD -->
+      <!-- PUSH NOTIFICATION CARD -->
       <div class="card">
         <h2>
-          <span>Emergency Alerts</span>
+          <span>Alert Notifications</span>
           <span id="badge-perm" class="badge pending">CHECKING</span>
         </h2>
 
-        <div class="alert-banner">
-          Keep Push Notifications enabled so DRRMC Officers can reach you during Typhoon, Flood, and Landslide emergencies.
-        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Enable alerts to receive immediate typhoon, flood, and evacuation warnings.
+        </p>
 
         <button id="btn-enable-push" class="btn" onclick="enablePushNotifications()">
-          🔔 Enable Push Notifications
+          🔔 Enable Emergency Alerts
         </button>
 
         <div style="margin-top: 14px;">
-          <label style="font-size: 0.8rem; font-weight:600;">Registered FCM Device Token:</label>
-          <div id="token-display" class="token-box">Not Registered</div>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Registered Device Token:</label>
+          <div id="token-display" class="token-box">Checking registration...</div>
         </div>
       </div>
 
       <!-- SYSTEM DIAGNOSTICS CARD -->
       <div class="card">
-        <h2>System Diagnostics</h2>
+        <h2>System Diagnostic</h2>
         <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()">
-          🚨 Dispatch Test Push Notification
+          ⚡ Dispatch Test Notification
         </button>
-        <button class="btn" style="background:#757575; margin-top:10px;" onclick="switchUser()">
+        <button class="btn btn-dark" style="margin-top: 10px;" onclick="switchUser()">
           Switch Member ID
         </button>
       </div>
@@ -207,10 +291,20 @@
 
   </div>
 
+  <!-- CUSTOM REUSABLE MODAL DIALOG -->
+  <div id="custom-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modal-icon" class="modal-icon">🚨</div>
+      <div id="modal-title" class="modal-title">Emergency Alert</div>
+      <div id="modal-body" class="modal-body">Modal body message content goes here.</div>
+      <button id="modal-action-btn" class="btn" onclick="closeModal()">OK</button>
+    </div>
+  </div>
+
+  <!-- TOAST MESSAGE -->
+  <div id="toast">Message notification</div>
+
   <script>
-    // -------------------------------------------------------------
-    // CONFIGURATION
-    // -------------------------------------------------------------
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     const firebaseConfig = {
@@ -219,100 +313,91 @@
       projectId: "care-drrmc-alerts",
       storageBucket: "care-drrmc-alerts.firebasestorage.app",
       messagingSenderId: "219371503949",
-      appId: "1:219371503949:web:423a6901e9f926c14b3704",
-      measurementId: "G-J80QY9Y1LE"
+      appId: "1:219371503949:web:423a6901e9f926c14b3704"
     };
 
     const VAPID_KEY = "BLcDdosDD6sfwNQnzhu5IR-MlaNP-IZlG5uaJbBuqx_JHTYLeN643eHILY4e2oMTk8OXIK5BFFkKeiLUtMopRgc";
 
-    // -------------------------------------------------------------
-    // INITIALIZATION & STATE
-    // -------------------------------------------------------------
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
-
     let currentMember = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // Auto-fill last used Member ID if stored locally
       const savedMemberId = localStorage.getItem("care_member_id");
       if (savedMemberId) {
         document.getElementById("input-member-id").value = savedMemberId;
       }
+    });
 
-      // Check notification permission on page load
-      if (Notification.permission === "default") {
-        document.getElementById("modal-onboarding").classList.remove("hidden");
+    // UX HELPERS: BUTTON LOADING SPINNER & CUSTOM MODALS
+    function setBtnLoading(btnId, isLoading, originalText) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (isLoading) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div> <span>Processing...</span>`;
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = `<span>${originalText}</span>`;
       }
-    });
+    }
 
-    document.getElementById("input-member-id").addEventListener("blur", function() {
-      this.value = formatToFiveDigits(this.value);
-    });
+    function showModal(icon, title, body, btnText = "OK", onConfirm = null) {
+      document.getElementById("modal-icon").textContent = icon;
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").textContent = body;
+      const btn = document.getElementById("modal-action-btn");
+      btn.textContent = btnText;
+      btn.onclick = () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+      };
+      document.getElementById("custom-modal").classList.add("active");
+    }
+
+    function closeModal() {
+      document.getElementById("custom-modal").classList.remove("active");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
 
     function formatToFiveDigits(val) {
       if (!val) return "00000";
       let cleaned = val.replace(/\D/g, '');
       while (cleaned.length < 5) cleaned = "0" + cleaned;
-      if (cleaned.length > 5) cleaned = cleaned.substring(cleaned.length - 5);
-      return cleaned;
+      return cleaned.substring(cleaned.length - 5);
     }
 
     async function handleMemberLogin() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
-      
       document.getElementById("input-member-id").value = formattedId;
-      localStorage.setItem("care_member_id", formattedId);
 
-      const res = await sendToBackend({
-        action: "getOrRegisterMember",
-        memberId: formattedId
-      });
+      setBtnLoading("btn-login", true, "Access Emergency Portal");
 
-      if (res.success) {
-        currentMember = res.member;
-        populateDashboard(currentMember);
-        document.getElementById("view-login").classList.add("hidden");
-        document.getElementById("view-dashboard").classList.remove("hidden");
-        
-        await checkAndRegisterFCM();
-      } else {
-        alert("Login Error: " + res.error);
-      }
-    }
+      try {
+        const res = await sendToBackend({ action: "getOrRegisterMember", memberId: formattedId });
+        setBtnLoading("btn-login", false, "Access Emergency Portal");
 
-    async function acceptOnboardingPush() {
-      document.getElementById("modal-onboarding").classList.add("hidden");
-      await enablePushNotifications();
-    }
-
-    async function loadSafetyLogs() {
-      const tbody = document.getElementById("safety-logs-body");
-      tbody.innerHTML = "<tr><td colspan='4' style='padding:12px; text-align:center;'>Loading status logs...</td></tr>";
-
-      const res = await fetch(GAS_BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "getEmergencyStatusLogs" })
-      }).then(r => r.json());
-
-      if (res.success && res.logs.length > 0) {
-        tbody.innerHTML = res.logs.map(log => `
-          <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 8px; font-weight: bold;">${log.memberId}</td>
-            <td style="padding: 8px;">
-              <span style="padding: 3px 6px; border-radius: 4px; font-weight: bold; color: white; background: ${log.type === 'SAFE' ? '#2e7d32' : '#b71c1c'};">
-                ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
-              </span>
-            </td>
-            <td style="padding: 8px;">
-              ${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 View Map</a>` : 'No GPS'}
-            </td>
-            <td style="padding: 8px; font-size: 0.75rem; color: #666;">${new Date(log.time).toLocaleTimeString()}</td>
-          </tr>
-        `).join('');
-      } else {
-        tbody.innerHTML = "<tr><td colspan='4' style='padding:12px; text-align:center;'>No emergency logs found.</td></tr>";
+        if (res.success) {
+          localStorage.setItem("care_member_id", formattedId);
+          currentMember = res.member;
+          populateDashboard(currentMember);
+          document.getElementById("view-login").classList.add("hidden");
+          document.getElementById("view-dashboard").classList.remove("hidden");
+          await checkAndRegisterFCM();
+          showToast("Welcome back, Member #" + formattedId);
+        } else {
+          showModal("❌", "Login Error", res.error || "Unable to find member account.");
+        }
+      } catch (err) {
+        setBtnLoading("btn-login", false, "Access Emergency Portal");
+        showModal("⚠️", "Network Error", "Unable to connect to CARE Backend. Check internet.");
       }
     }
 
@@ -328,6 +413,7 @@
 
     async function saveProfileChanges() {
       if (!currentMember) return;
+      setBtnLoading("btn-save-profile", true, "Save & Update Location");
 
       const payload = {
         action: "updateMemberProfile",
@@ -340,52 +426,60 @@
         barangay: document.getElementById("field-barangay").value
       };
 
-      const res = await sendToBackend(payload);
-      if (res.success) {
-        alert("✅ Profile & Location updated successfully in Cooperative Database!");
-      } else {
-        alert("Save Error: " + res.error);
+      try {
+        const res = await sendToBackend(payload);
+        setBtnLoading("btn-save-profile", false, "Save & Update Location");
+        if (res.success) {
+          showModal("✅", "Profile Saved", "Your demographic and location profile have been updated.");
+        } else {
+          showModal("❌", "Save Error", res.error);
+        }
+      } catch (e) {
+        setBtnLoading("btn-save-profile", false, "Save & Update Location");
+        showModal("⚠️", "Network Error", e.message);
       }
     }
 
     async function sendSafetyStatus(type) {
-      if (!currentMember) {
-        alert("Please login with your Member ID first!");
-        return;
-      }
+      if (!currentMember) return;
+      const btnId = type === 'SAFE' ? 'btn-status-safe' : 'btn-status-sos';
+      const origText = type === 'SAFE' ? '💚 I\'M SAFE' : '🚨 SOS HELP';
 
       let lat = null, lng = null;
 
-      if (type === "SOS_HELP" && navigator.geolocation) {
-        alert("Getting your GPS location for DRRMC Emergency Rescuers...");
+      if (type === 'SOS_HELP' && navigator.geolocation) {
+        setBtnLoading(btnId, true, origText);
         try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+          const pos = await new Promise((res, rej) => {
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 });
           });
-          lat = position.coords.latitude;
-          lng = position.coords.longitude;
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
         } catch (e) {
-          console.warn("GPS Location not available:", e.message);
+          console.warn("GPS unavailable:", e.message);
         }
+      } else {
+        setBtnLoading(btnId, true, origText);
       }
 
-      const payload = {
+      const res = await sendToBackend({
         action: "sendEmergencyStatus",
         memberId: currentMember.member_id,
         statusType: type,
         latitude: lat,
         longitude: lng
-      };
+      });
 
-      const res = await sendToBackend(payload);
+      setBtnLoading(btnId, false, origText);
+
       if (res.success) {
-        if (type === "SAFE") {
-          alert("💚 Thank you! Your 'I'M SAFE' status has been registered with DRRMC.");
+        if (type === 'SAFE') {
+          showModal("💚", "Status Logged", "Your 'I'M SAFE' status is now registered with DRRMC Officers.");
         } else {
-          alert("🚨 SOS EMERGENCY DISPATCHED!\n\nDRRMC Rescuers have received your emergency location request.");
+          showModal("🚨", "SOS DISPATCHED!", "Emergency rescuers have received your SOS request and GPS location.");
         }
       } else {
-        alert("Error logging status: " + res.error);
+        showModal("❌", "Dispatch Failed", res.error);
       }
     }
 
@@ -408,77 +502,52 @@
         const perm = await Notification.requestPermission();
         await checkAndRegisterFCM();
       } catch (err) {
-        alert("Permission Error: " + err.message);
+        showModal("⚠️", "Permission Error", err.message);
       }
     }
 
     async function fetchAndSyncToken() {
-    const tokenDisplay = document.getElementById("token-display");
-    tokenDisplay.textContent = "Registering Service Worker...";
+      const tokenDisplay = document.getElementById("token-display");
+      tokenDisplay.textContent = "Syncing FCM token...";
 
-    try {
-      const cleanVapidKey = String(VAPID_KEY).trim().replace(/['"\s]/g, '');
-
-      if (!cleanVapidKey || cleanVapidKey.length < 50) {
-        throw new Error("VAPID_KEY is missing or invalid. Please check your Firebase Console keys.");
-      }
-
-      // 1. Register Service Worker
-      await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-      const swReg = await navigator.serviceWorker.ready;
-
-      tokenDisplay.textContent = "Generating Fresh FCM Token...";
-
-      // 2. Delete any old cached token from mobile Chrome IndexedDB
       try {
-        await messaging.deleteToken();
-        console.log("Stale token deleted successfully.");
-      } catch (e) {
-        console.log("No stale token found.");
+        await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        const swReg = await navigator.serviceWorker.ready;
+
+        const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+
+        if (token) {
+          tokenDisplay.textContent = token;
+          await sendToBackend({
+            action: "registerDevice",
+            memberId: currentMember ? currentMember.member_id : "00000",
+            token: token,
+            deviceType: /android/i.test(navigator.userAgent) ? "ANDROID" : "IOS",
+            browser: "Browser"
+          });
+        } else {
+          tokenDisplay.textContent = "Failed to obtain token.";
+        }
+      } catch (err) {
+        tokenDisplay.textContent = "Error: " + err.message;
       }
-
-      // 3. Request BRAND NEW FCM Token directly from Google FCM Servers
-      const token = await messaging.getToken({
-        vapidKey: cleanVapidKey,
-        serviceWorkerRegistration: swReg
-      });
-
-      if (token) {
-        tokenDisplay.textContent = token;
-
-        const memberIdToUse = currentMember ? currentMember.member_id : "15512";
-        
-        // 4. Register the fresh token in Google Sheets
-        await sendToBackend({
-          action: "registerDevice",
-          memberId: memberIdToUse,
-          token: token,
-          deviceType: detectDevice(),
-          browser: detectBrowser()
-        });
-
-        console.log("Fresh token synchronized with Google Sheets!");
-      } else {
-        tokenDisplay.textContent = "Failed to generate FCM Token.";
-      }
-    } catch (err) {
-      console.error("Token Fetch Error:", err);
-      tokenDisplay.textContent = "Error: " + err.message;
     }
-  }
 
     async function triggerTestAlert() {
       const token = document.getElementById("token-display").textContent;
       if (!token || token.length < 20) {
-        alert("No active FCM Token registered!");
+        showModal("⚠️", "No Token", "Please enable notifications first.");
         return;
       }
 
+      setBtnLoading("btn-test-alert", true, "Dispatch Test Notification");
       const res = await sendToBackend({ action: "sendTestAlert", token: token });
+      setBtnLoading("btn-test-alert", false, "Dispatch Test Notification");
+
       if (res.success && res.response.success) {
-        alert("🚨 Test Alert Sent Successfully!");
+        showModal("🔔", "Test Dispatched", "Test alert delivered to your device via FCM v1.");
       } else {
-        alert("Alert dispatch failed: " + JSON.stringify(res));
+        showModal("❌", "Dispatch Error", JSON.stringify(res));
       }
     }
 
@@ -488,43 +557,12 @@
     }
 
     async function sendToBackend(payload) {
-      const response = await fetch(GAS_BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      return await response.json();
+      const res = await fetch(GAS_BACKEND_URL, { method: "POST", body: JSON.stringify(payload) });
+      return await res.json();
     }
 
-    function detectDevice() {
-      const ua = navigator.userAgent;
-      if (/android/i.test(ua)) return "ANDROID";
-      if (/iPhone|iPad/.test(ua)) return "IOS";
-      if (/Win/.test(ua)) return "WINDOWS";
-      if (/Mac/.test(ua)) return "MAC";
-      return "DESKTOP";
-    }
-
-    function detectBrowser() {
-      const ua = navigator.userAgent;
-      if (ua.includes("Chrome")) return "Chrome";
-      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
-      if (ua.includes("Firefox")) return "Firefox";
-      return "Browser";
-    }
-
-    // FOREGROUND EMERGENCY NOTIFICATION LISTENER (Fires when website tab is OPEN)
     messaging.onMessage((payload) => {
-      console.log('🚨 Foreground Emergency Alert Received:', payload);
-      
-      const title = payload.notification ? payload.notification.title : '🚨 EMERGENCY ALERT';
-      const body = payload.notification ? payload.notification.body : 'Critical warning from DRRMC';
-
-      // Play emergency siren audio alert
-      const sirenAudio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
-      sirenAudio.play().catch(e => console.log('Audio autoplay blocked'));
-
-      // Display big red emergency alert modal on screen
-      alert(`🚨 ${title.toUpperCase()}\n\n${body}\n\nPlease follow official DRRMC instructions!`);
+      showModal("🚨", payload.notification.title || "EMERGENCY ALERT", payload.notification.body || "Follow official instructions.");
     });
   </script>
 </body>
