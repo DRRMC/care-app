@@ -511,6 +511,21 @@
       if (ua.includes("Firefox")) return "Firefox";
       return "Browser";
     }
+
+    // FOREGROUND EMERGENCY NOTIFICATION LISTENER (Fires when website tab is OPEN)
+    messaging.onMessage((payload) => {
+      console.log('🚨 Foreground Emergency Alert Received:', payload);
+      
+      const title = payload.notification ? payload.notification.title : '🚨 EMERGENCY ALERT';
+      const body = payload.notification ? payload.notification.body : 'Critical warning from DRRMC';
+
+      // Play emergency siren audio alert
+      const sirenAudio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
+      sirenAudio.play().catch(e => console.log('Audio autoplay blocked'));
+
+      // Display big red emergency alert modal on screen
+      alert(`🚨 ${title.toUpperCase()}\n\n${body}\n\nPlease follow official DRRMC instructions!`);
+    });
   </script>
 </body>
 </html>
