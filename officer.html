@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CARE - DRRMC Officer Broadcast Command Center</title>
+  <style>
+    :root {
+      --primary: #b71c1c;
+      --primary-dark: #7f0000;
+      --bg: #eceff1;
+      --surface: #ffffff;
+      --text: #212121;
+      --border: #cfd8dc;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+    
+    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 24px; text-align: center; }
+    .header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; }
+    .header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+
+    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
+    .card { background: var(--surface); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
+    .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--primary-dark); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; outline: none; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    .btn-broadcast { width: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white; border: none; padding: 16px; border-radius: var(--radius); font-size: 1.2rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(183, 28, 28, 0.3); transition: transform 0.1s; }
+    .btn-broadcast:active { transform: scale(0.98); }
+
+    .summary-box { background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: var(--radius); padding: 16px; margin-top: 16px; color: #1b5e20; }
+    .summary-box h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🚨 CARE DRRMC COMMAND CENTER</h1>
+    <p>Emergency Notification & Dispatch Console</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Create Emergency Alert Broadcast</h2>
+
+      <div class="form-group">
+        <label for="alert-title">Emergency Alert Title</label>
+        <input type="text" id="alert-title" placeholder="e.g. 🚨 RED ALERT: Typhoon Evacuation Warning">
+      </div>
+
+      <div class="form-group">
+        <label for="alert-message">Emergency Message Body</label>
+        <textarea id="alert-message" rows="4" placeholder="Type critical instructions for Cooperative Members..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alert-category">Disaster Category</label>
+          <select id="alert-category">
+            <option value="TYPHOON">🌀 Typhoon</option>
+            <option value="FLOOD">🌊 Flood</option>
+            <option value="EARTHQUAKE">🌋 Earthquake</option>
+            <option value="FIRE">🔥 Fire Emergency</option>
+            <option value="LANDSLIDE">⛰️ Landslide Warning</option>
+            <option value="MISSING_PERSON">🔍 Missing Person</option>
+            <option value="ADVISORY">📢 General Advisory</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="alert-priority">Alert Priority</label>
+          <select id="alert-priority">
+            <option value="CRITICAL">🚨 CRITICAL (High Vibration & Sound)</option>
+            <option value="HIGH">⚠️ HIGH</option>
+            <option value="MODERATE">ℹ️ MODERATE</option>
+            <option value="LOW">💬 LOW</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="target-type">Recipient Target Filter</label>
+        <select id="target-type" onchange="handleTargetChange()">
+          <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000)</option>
+          <option value="BRANCH">🏢 By Branch</option>
+          <option value="PROVINCE">📍 By Province</option>
+          <option value="MUNICIPALITY">🏙️ By Municipality</option>
+          <option value="BARANGAY">🏡 By Barangay</option>
+          <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
+        </select>
+      </div>
+
+      <div id="target-value-group" class="form-group hidden">
+        <label id="target-value-label" for="target-value">Filter Value</label>
+        <input type="text" id="target-value" placeholder="Enter target filter value...">
+      </div>
+
+      <button class="btn-broadcast" onclick="dispatchEmergencyAlert()">
+        ⚡ BROADCAST EMERGENCY ALERT NOW
+      </button>
+
+      <div id="summary-box" class="summary-box hidden">
+        <h3>Broadcast Dispatch Summary</h3>
+        <p><strong>Alert ID:</strong> <span id="sum-id">-</span></p>
+        <p><strong>Total Targeted Devices:</strong> <span id="sum-targeted">0</span></p>
+        <p><strong>Successfully Delivered:</strong> <span id="sum-sent">0</span></p>
+        <p><strong>Failed Dispatches:</strong> <span id="sum-failed">0</span></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
+
+    function handleTargetChange() {
+      const type = document.getElementById("target-type").value;
+      const group = document.getElementById("target-value-group");
+      const label = document.getElementById("target-value-label");
+      const input = document.getElementById("target-value");
+
+      if (type === "ALL") {
+        group.classList.add("hidden");
+      } else {
+        group.classList.remove("hidden");
+        if (type === "BRANCH") label.textContent = "Enter Branch Name (e.g. Main Branch)";
+        if (type === "PROVINCE") label.textContent = "Enter Province (e.g. Marinduque)";
+        if (type === "MUNICIPALITY") label.textContent = "Enter Municipality (e.g. Buenavista)";
+        if (type === "BARANGAY") label.textContent = "Enter Barangay (e.g. Dos)";
+        if (type === "MEMBER") label.textContent = "Enter 5-Digit Member ID (e.g. 00552)";
+      }
+    }
+
+    async function dispatchEmergencyAlert() {
+      const title = document.getElementById("alert-title").value;
+      const message = document.getElementById("alert-message").value;
+      const category = document.getElementById("alert-category").value;
+      const priority = document.getElementById("alert-priority").value;
+      const targetType = document.getElementById("target-type").value;
+      let targetValue = document.getElementById("target-value").value;
+
+      if (!title || !message) {
+        alert("Please enter both Alert Title and Emergency Message!");
+        return;
+      }
+
+      if (targetType !== "ALL" && !targetValue) {
+        alert("Please enter the target filter value!");
+        return;
+      }
+
+      const confirmDispatch = confirm(
+        `🚨 CONFIRM EMERGENCY BROADCAST\n\nTitle: ${title}\nTarget: ${targetType} (${targetValue || 'ALL'})\nPriority: ${priority}\n\nAre you sure you want to dispatch this alert immediately?`
+      );
+
+      if (!confirmDispatch) return;
+
+      const payload = {
+        action: "broadcastEmergencyAlert",
+        title: title,
+        message: message,
+        category: category,
+        priority: priority,
+        targetType: targetType,
+        targetValue: targetValue,
+        senderId: "DRRMC-OFFICER-01"
+      };
+
+      try {
+        const response = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+
+        if (res.success) {
+          const sum = res.summary;
+          document.getElementById("sum-id").textContent = sum.alertId;
+          document.getElementById("sum-targeted").textContent = sum.totalTargeted;
+          document.getElementById("sum-sent").textContent = sum.totalSent;
+          document.getElementById("sum-failed").textContent = sum.totalFailed;
+          document.getElementById("summary-box").classList.remove("hidden");
+
+          alert(`🚨 BROADCAST COMPLETE!\n\nDelivered: ${sum.totalSent} device(s)`);
+        } else {
+          alert("Broadcast Error: " + res.error);
+        }
+      } catch (err) {
+        alert("Network Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
