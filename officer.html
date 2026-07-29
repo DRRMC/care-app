@@ -85,7 +85,7 @@
 <body>
 
   <div class="header">
-    <h1>🚨 DRRMC COMMAND CENTER</h1>
+    <h1>🚨 APECC DRRMC COMMAND CENTER</h1>
     <p>Disaster Risk Reduction Management Emergency Broadcast Engine</p>
   </div>
 
@@ -128,42 +128,37 @@
       </div>
 
       <div class="form-group">
-  <label for="target-type">Recipient Filter</label>
-  <select id="target-type" onchange="handleTargetChange()">
-    <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
-    <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
-    <option value="PROVINCE">📍 By Registered Province</option>
-    <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
-    <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
-  </select>
-</div>
+        <label for="target-type">Recipient Filter</label>
+        <select id="target-type" onchange="handleTargetChange()">
+          <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
+          <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
+          <option value="PROVINCE">📍 By Registered Province</option>
+          <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
+          <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
+        </select>
+      </div>
 
-<!-- DYNAMIC RECIPIENT TARGET SELECTORS -->
-<div id="target-value-group" class="form-group hidden">
-  <label id="target-value-label" for="target-value">Target Area</label>
-
-  <!-- 1. Branch Dropdown -->
-  <select id="target-branch-select" class="hidden">
-    <option value="">-- Select Target Branch --</option>
-  </select>
-
-  <!-- 2. Dynamic Province Dropdown (Loaded from Database) -->
-  <select id="target-province-select" class="hidden">
-    <option value="">-- Loading Provinces from Member Database... --</option>
-  </select>
-
-  <!-- 3. Dynamic Municipality Dropdown (Loaded from Database) -->
-  <select id="target-municipality-select" class="hidden">
-    <option value="">-- Loading Municipalities from Member Database... --</option>
-  </select>
-
-  <!-- 4. Member ID Input Box -->
-  <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
-</div>
-
+      <!-- DYNAMIC RECIPIENT TARGET SELECTORS -->
       <div id="target-value-group" class="form-group hidden">
-        <label id="target-value-label" for="target-value">Filter Value</label>
-        <input type="text" id="target-value" placeholder="Enter target filter value...">
+        <label id="target-value-label" for="target-value-input">Target Area</label>
+
+        <!-- 1. Branch Dropdown -->
+        <select id="target-branch-select" class="hidden">
+          <option value="">-- Select Target Branch --</option>
+        </select>
+
+        <!-- 2. Dynamic Province Dropdown -->
+        <select id="target-province-select" class="hidden">
+          <option value="">-- Loading Provinces from Member Database... --</option>
+        </select>
+
+        <!-- 3. Dynamic Municipality Dropdown -->
+        <select id="target-municipality-select" class="hidden">
+          <option value="">-- Loading Municipalities from Member Database... --</option>
+        </select>
+
+        <!-- 4. Member ID Input Box -->
+        <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
       </div>
 
       <button id="btn-broadcast" class="btn-broadcast" onclick="dispatchEmergencyAlert()">
@@ -226,36 +221,113 @@
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
-    document.addEventListener("DOMContentLoaded", loadSafetyLogs);
+    let cachedLocations = { provinces: [], municipalities: [] };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      populateOfficerBranchDropdown();
+      fetchMemberLocations();
+      loadSafetyLogs();
+    });
+
+    function populateOfficerBranchDropdown() {
+      const select = document.getElementById("target-branch-select");
+      if (!select) return;
+
+      select.innerHTML = '<option value="">-- Select Target Branch --</option>';
+
+      const centralOpt = document.createElement("option");
+      centralOpt.value = "Central Office";
+      centralOpt.textContent = "Central Office";
+      select.appendChild(centralOpt);
+
+      for (let i = 1; i <= 1863; i++) {
+        const code = "B" + String(i).padStart(4, '0');
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        select.appendChild(opt);
+      }
+    }
+
+    async function fetchMemberLocations() {
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "getRegisteredLocations" })
+        }).then(r => r.json());
+
+        if (res.success) {
+          cachedLocations = res;
+          populateLocationDropdowns(res.provinces, res.municipalities);
+        }
+      } catch (e) {
+        console.error("Failed to fetch locations:", e);
+      }
+    }
+
+    function populateLocationDropdowns(provinces, municipalities) {
+      const provSelect = document.getElementById("target-province-select");
+      const muniSelect = document.getElementById("target-municipality-select");
+
+      if (provinces && provinces.length > 0) {
+        provSelect.innerHTML = '<option value="">-- Select Registered Province --</option>' +
+          provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+      } else {
+        provSelect.innerHTML = '<option value="">No provinces registered yet</option>';
+      }
+
+      if (municipalities && municipalities.length > 0) {
+        muniSelect.innerHTML = '<option value="">-- Select Registered Municipality / City --</option>' +
+          municipalities.map(m => `<option value="${m}">${m}</option>`).join('');
+      } else {
+        muniSelect.innerHTML = '<option value="">No municipalities registered yet</option>';
+      }
+    }
 
     function handleTargetChange() {
-  const type = document.getElementById("target-type").value;
-  const group = document.getElementById("target-value-group");
-  const label = document.getElementById("target-value-label");
-  const input = document.getElementById("target-value");
+      const type = document.getElementById("target-type").value;
+      const group = document.getElementById("target-value-group");
+      const label = document.getElementById("target-value-label");
 
-  if (type === "ALL") {
-    group.classList.add("hidden");
-  } else {
-    group.classList.remove("hidden");
-    if (type === "BRANCH") {
-      label.textContent = "Enter Branch (e.g. Central Office or B0001)";
-      input.placeholder = "e.g. Central Office or B0123";
+      const branchSel = document.getElementById("target-branch-select");
+      const provSel = document.getElementById("target-province-select");
+      const muniSel = document.getElementById("target-municipality-select");
+      const memberInp = document.getElementById("target-member-input");
+
+      branchSel.classList.add("hidden");
+      provSel.classList.add("hidden");
+      muniSel.classList.add("hidden");
+      memberInp.classList.add("hidden");
+
+      if (type === "ALL") {
+        group.classList.add("hidden");
+      } else {
+        group.classList.remove("hidden");
+
+        if (type === "BRANCH") {
+          label.textContent = "Select Target Branch";
+          branchSel.classList.remove("hidden");
+        } else if (type === "PROVINCE") {
+          label.textContent = "Select Registered Target Province";
+          provSel.classList.remove("hidden");
+        } else if (type === "MUNICIPALITY") {
+          label.textContent = "Select Registered Target Municipality / City";
+          muniSel.classList.remove("hidden");
+        } else if (type === "MEMBER") {
+          label.textContent = "Enter 5-Digit Member ID";
+          memberInp.classList.remove("hidden");
+        }
+      }
     }
-    if (type === "PROVINCE") {
-      label.textContent = "Enter Province";
-      input.placeholder = "e.g. Batangas";
+
+    function getSelectedTargetValue() {
+      const type = document.getElementById("target-type").value;
+      if (type === "BRANCH") return document.getElementById("target-branch-select").value;
+      if (type === "PROVINCE") return document.getElementById("target-province-select").value;
+      if (type === "MUNICIPALITY") return document.getElementById("target-municipality-select").value;
+      if (type === "MEMBER") return document.getElementById("target-member-input").value;
+      return "";
     }
-    if (type === "MUNICIPALITY") {
-      label.textContent = "Enter Municipality";
-      input.placeholder = "e.g. Lipa City";
-    }
-    if (type === "MEMBER") {
-      label.textContent = "Enter 5-Digit Member ID";
-      input.placeholder = "e.g. 00552";
-    }
-  }
-}
 
     function setBroadcastLoading(isLoading) {
       const btn = document.getElementById("btn-broadcast");
@@ -286,16 +358,21 @@
       const title = document.getElementById("alert-title").value;
       const message = document.getElementById("alert-message").value;
       const targetType = document.getElementById("target-type").value;
-      const targetValue = document.getElementById("target-value").value;
+      const targetValue = getSelectedTargetValue();
 
       if (!title || !message) {
-        alert("Enter alert title and message!");
+        alert("Please enter alert title and message!");
+        return;
+      }
+
+      if (targetType !== "ALL" && !targetValue) {
+        alert("Please select or enter the target value!");
         return;
       }
 
       showConfirmModal(
         "🚨 Confirm Broadcast Dispatch",
-        `Broadcast alert: "${title}" to target "${targetType}"?`,
+        `Broadcast alert: "${title}" to target "${targetType}" (${targetValue || 'ALL'})?`,
         async () => {
           setBroadcastLoading(true);
 
@@ -332,120 +409,6 @@
         }
       );
     }
-
-    let cachedLocations = { provinces: [], municipalities: [] };
-
-document.addEventListener("DOMContentLoaded", () => {
-  populateOfficerBranchDropdown();
-  fetchMemberLocations();
-  loadSafetyLogs();
-});
-
-// Populate Branch dropdown (Central Office & B0001 to B1863)
-function populateOfficerBranchDropdown() {
-  const select = document.getElementById("target-branch-select");
-  if (!select) return;
-
-  select.innerHTML = '<option value="">-- Select Target Branch --</option>';
-
-  const centralOpt = document.createElement("option");
-  centralOpt.value = "Central Office";
-  centralOpt.textContent = "Central Office";
-  select.appendChild(centralOpt);
-
-  for (let i = 1; i <= 1863; i++) {
-    const code = "B" + String(i).padStart(4, '0');
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = code;
-    select.appendChild(opt);
-  }
-}
-
-// Fetch unique Provinces and Municipalities from Google Sheets
-async function fetchMemberLocations() {
-  try {
-    const res = await fetch(GAS_BACKEND_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "getRegisteredLocations" })
-    }).then(r => r.json());
-
-    if (res.success) {
-      cachedLocations = res;
-      populateLocationDropdowns(res.provinces, res.municipalities);
-    }
-  } catch (e) {
-    console.error("Failed to fetch locations:", e);
-  }
-}
-
-function populateLocationDropdowns(provinces, municipalities) {
-  const provSelect = document.getElementById("target-province-select");
-  const muniSelect = document.getElementById("target-municipality-select");
-
-  // Populate Provinces
-  if (provinces.length > 0) {
-    provSelect.innerHTML = '<option value="">-- Select Registered Province --</option>' +
-      provinces.map(p => `<option value="${p}">${p}</option>`).join('');
-  } else {
-    provSelect.innerHTML = '<option value="">No provinces registered yet</option>';
-  }
-
-  // Populate Municipalities
-  if (municipalities.length > 0) {
-    muniSelect.innerHTML = '<option value="">-- Select Registered Municipality / City --</option>' +
-      municipalities.map(m => `<option value="${m}">${m}</option>`).join('');
-  } else {
-    muniSelect.innerHTML = '<option value="">No municipalities registered yet</option>';
-  }
-}
-
-function handleTargetChange() {
-  const type = document.getElementById("target-type").value;
-  const group = document.getElementById("target-value-group");
-  const label = document.getElementById("target-value-label");
-
-  const branchSel = document.getElementById("target-branch-select");
-  const provSel = document.getElementById("target-province-select");
-  const muniSel = document.getElementById("target-municipality-select");
-  const memberInp = document.getElementById("target-member-input");
-
-  // Hide all inputs first
-  branchSel.classList.add("hidden");
-  provSel.classList.add("hidden");
-  muniSel.classList.add("hidden");
-  memberInp.classList.add("hidden");
-
-  if (type === "ALL") {
-    group.classList.add("hidden");
-  } else {
-    group.classList.remove("hidden");
-
-    if (type === "BRANCH") {
-      label.textContent = "Select Target Branch";
-      branchSel.classList.remove("hidden");
-    } else if (type === "PROVINCE") {
-      label.textContent = "Select Registered Target Province";
-      provSel.classList.remove("hidden");
-    } else if (type === "MUNICIPALITY") {
-      label.textContent = "Select Registered Target Municipality / City";
-      muniSel.classList.remove("hidden");
-    } else if (type === "MEMBER") {
-      label.textContent = "Enter 5-Digit Member ID";
-      memberInp.classList.remove("hidden");
-    }
-  }
-}
-
-// Function to read the correct target value based on filter choice
-function getSelectedTargetValue() {
-  const type = document.getElementById("target-type").value;
-  if (type === "BRANCH") return document.getElementById("target-branch-select").value;
-  if (type === "PROVINCE") return document.getElementById("target-province-select").value;
-  if (type === "MUNICIPALITY") return document.getElementById("target-municipality-select").value;
-  if (type === "MEMBER") return document.getElementById("target-member-input").value;
-  return "";
-}
 
     async function loadSafetyLogs() {
       const tbody = document.getElementById("safety-logs-body");
