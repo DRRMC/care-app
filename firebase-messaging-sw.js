@@ -12,9 +12,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// BACKGROUND EMERGENCY NOTIFICATION LISTENER (Fires when tab is CLOSED or phone LOCKED)
+// Handle background notifications when app tab is closed
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Background Alert Received:', payload);
+  console.log('[firebase-messaging-sw.js] Background Message Received:', payload);
 
   const title = payload.notification ? payload.notification.title : '🚨 EMERGENCY ALERT';
   const body = payload.notification ? payload.notification.body : 'Critical warning from DRRMC';
@@ -24,16 +24,28 @@ messaging.onBackgroundMessage((payload) => {
     icon: 'https://img.icons8.com/color/96/000000/siren.png',
     badge: 'https://img.icons8.com/color/48/000000/siren.png',
     vibrate: [300, 100, 300, 100, 300],
-    requireInteraction: true,
+    tag: 'emergency-alert',
+    renotify: true,
     data: payload.data || {}
   };
 
-  self.registration.showNotification(title, notificationOptions);
+  return self.registration.showNotification(title, notificationOptions);
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  const targetUrl = 'https://drrmc.github.io/care-app/';
+
   event.waitUntil(
-    clients.openWindow('https://drrmc.github.io/care-app/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (let client of windowClients) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });
