@@ -135,12 +135,18 @@
 
   async function fetchAndRegisterToken() {
     const tokenDisplay = document.getElementById("token-display");
-    tokenDisplay.textContent = "Generating Token...";
+    tokenDisplay.textContent = "Registering Service Worker...";
 
     try {
-      // Register Service Worker for GitHub Pages
-      const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+      // 1. Register the Service Worker script
+      await navigator.serviceWorker.register('./firebase-messaging-sw.js');
 
+      // 2. WAIT until the Service Worker is 100% ACTIVE in the browser
+      const swRegistration = await navigator.serviceWorker.ready;
+
+      tokenDisplay.textContent = "Generating FCM Token...";
+
+      // 3. Get FCM Token safely
       const token = await messaging.getToken({
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: swRegistration
@@ -149,7 +155,7 @@
       if (token) {
         tokenDisplay.textContent = token;
 
-        // Register token with Google Apps Script Backend
+        // 4. Send token to Google Sheets Database
         const response = await sendToBackend({
           action: "registerDevice",
           memberId: document.getElementById("member-id").value || "MEM-10001",
