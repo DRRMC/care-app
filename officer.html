@@ -3,56 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CARE - DRRMC Officer Broadcast Command Center</title>
+  <title>CARE - Officer Command Center</title>
   <style>
     :root {
       --primary: #b71c1c;
       --primary-dark: #7f0000;
-      --bg: #eceff1;
+      --bg: #eef2f5;
       --surface: #ffffff;
       --text: #212121;
       --border: #cfd8dc;
-      --radius: 8px;
+      --radius: 12px;
+      --shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
-    
-    .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 24px; text-align: center; }
+
+    .header {
+      background: linear-gradient(135deg, #7f0000, #b71c1c);
+      color: white; padding: 28px 16px; text-align: center; box-shadow: var(--shadow);
+    }
     .header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; }
     .header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
 
-    .container { max-width: 650px; margin: 20px auto; padding: 0 16px; }
-    .card { background: var(--surface); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
-    .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: var(--primary-dark); border-bottom: 2px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .container { max-width: 750px; margin: 20px auto; padding: 0 16px; }
+
+    .card {
+      background: var(--surface); border-radius: var(--radius); padding: 24px;
+      margin-bottom: 20px; border: 1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 1.25rem; color: var(--primary-dark); border-bottom: 2px solid var(--border);
+      padding-bottom: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;
+    }
 
     .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; outline: none; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #444; margin-bottom: 6px; text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none;
+    }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
 
-    .btn-broadcast { width: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white; border: none; padding: 16px; border-radius: var(--radius); font-size: 1.2rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(183, 28, 28, 0.3); transition: transform 0.1s; }
-    .btn-broadcast:active { transform: scale(0.98); }
-    .btn-refresh { background: #1976d2; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    .btn-broadcast {
+      width: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white;
+      border: none; padding: 16px; border-radius: 8px; font-size: 1.15rem; font-weight: 800;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(183, 28, 28, 0.35); transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-broadcast:disabled { opacity: 0.65; cursor: not-allowed; }
 
-    .summary-box { background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: var(--radius); padding: 16px; margin-top: 16px; color: #1b5e20; }
-    .summary-box h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .spinner {
+      width: 22px; height: 22px; border: 3px solid #ffffff; border-top: 3px solid transparent;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* SUMMARY TILES */
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .tile { background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+    .tile-val { font-size: 1.5rem; font-weight: 800; color: var(--primary-dark); }
+    .tile-lbl { font-size: 0.75rem; font-weight: 700; color: #666; text-transform: uppercase; }
+
     .hidden { display: none !important; }
+
+    /* CUSTOM MODAL POPUP */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: white; border-radius: 16px; padding: 24px; text-align: center;
+      max-width: 420px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+    }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h1>🚨 CARE DRRMC COMMAND CENTER</h1>
-    <p>Emergency Notification & Rescuer Dispatch Console</p>
+    <h1>🚨 CARE COMMAND CENTER</h1>
+    <p>Disaster Risk Reduction Management Emergency Broadcast Engine</p>
   </div>
 
   <div class="container">
 
-    <!-- CARD 1: BROADCAST EMERGENCY ALERT -->
     <div class="card">
-      <h2>Create Emergency Alert Broadcast</h2>
+      <h2>Broadcast Emergency Alert</h2>
 
       <div class="form-group">
         <label for="alert-title">Emergency Alert Title</label>
@@ -61,7 +101,7 @@
 
       <div class="form-group">
         <label for="alert-message">Emergency Message Body</label>
-        <textarea id="alert-message" rows="4" placeholder="Type critical instructions for Cooperative Members..."></textarea>
+        <textarea id="alert-message" rows="3" placeholder="Type instructions for Cooperative Members..."></textarea>
       </div>
 
       <div class="form-row">
@@ -73,31 +113,28 @@
             <option value="EARTHQUAKE">🌋 Earthquake</option>
             <option value="FIRE">🔥 Fire Emergency</option>
             <option value="LANDSLIDE">⛰️ Landslide Warning</option>
-            <option value="MISSING_PERSON">🔍 Missing Person</option>
             <option value="ADVISORY">📢 General Advisory</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="alert-priority">Alert Priority</label>
+          <label for="alert-priority">Priority Level</label>
           <select id="alert-priority">
             <option value="CRITICAL">🚨 CRITICAL (High Vibration & Sound)</option>
             <option value="HIGH">⚠️ HIGH</option>
             <option value="MODERATE">ℹ️ MODERATE</option>
-            <option value="LOW">💬 LOW</option>
           </select>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="target-type">Recipient Target Filter</label>
+        <label for="target-type">Recipient Filter</label>
         <select id="target-type" onchange="handleTargetChange()">
-          <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000)</option>
+          <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
           <option value="BRANCH">🏢 By Branch</option>
           <option value="PROVINCE">📍 By Province</option>
           <option value="MUNICIPALITY">🏙️ By Municipality</option>
-          <option value="BARANGAY">🏡 By Barangay</option>
-          <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
+          <option value="MEMBER">👤 Single Member ID</option>
         </select>
       </div>
 
@@ -106,29 +143,36 @@
         <input type="text" id="target-value" placeholder="Enter target filter value...">
       </div>
 
-      <button class="btn-broadcast" onclick="dispatchEmergencyAlert()">
-        ⚡ BROADCAST EMERGENCY ALERT NOW
+      <button id="btn-broadcast" class="btn-broadcast" onclick="dispatchEmergencyAlert()">
+        <span>⚡ BROADCAST EMERGENCY ALERT NOW</span>
       </button>
 
-      <div id="summary-box" class="summary-box hidden">
-        <h3>Broadcast Dispatch Summary</h3>
-        <p><strong>Alert ID:</strong> <span id="sum-id">-</span></p>
-        <p><strong>Total Targeted Devices:</strong> <span id="sum-targeted">0</span></p>
-        <p><strong>Successfully Delivered:</strong> <span id="sum-sent">0</span></p>
-        <p><strong>Failed Dispatches:</strong> <span id="sum-failed">0</span></p>
+      <div id="summary-grid" class="summary-grid hidden">
+        <div class="tile">
+          <div id="sum-targeted" class="tile-val">0</div>
+          <div class="tile-lbl">Targeted</div>
+        </div>
+        <div class="tile">
+          <div id="sum-sent" class="tile-val" style="color:#2e7d32;">0</div>
+          <div class="tile-lbl">Delivered</div>
+        </div>
+        <div class="tile">
+          <div id="sum-failed" class="tile-val" style="color:#c62828;">0</div>
+          <div class="tile-lbl">Failed</div>
+        </div>
       </div>
     </div>
 
-    <!-- CARD 2: LIVE MEMBER SAFETY & SOS FEED FOR OFFICERS -->
+    <!-- LIVE SAFETY FEED -->
     <div class="card">
       <h2>
-        <span>Live Member Safety & SOS Feed</span>
-        <button class="btn-refresh" onclick="loadSafetyLogs()">🔄 Refresh</button>
+        <span>Live Member Safety Logs</span>
+        <button onclick="loadSafetyLogs()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">🔄 Refresh</button>
       </h2>
 
       <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
         <thead>
-          <tr style="background: #eceff1; text-align: left;">
+          <tr style="background: #f0f4f8; text-align: left;">
             <th style="padding: 10px;">Member ID</th>
             <th style="padding: 10px;">Status</th>
             <th style="padding: 10px;">GPS Location</th>
@@ -136,100 +180,115 @@
           </tr>
         </thead>
         <tbody id="safety-logs-body">
-          <tr><td colspan="4" style="padding: 14px; text-align: center; color: #777;">Click refresh to load live member status logs.</td></tr>
+          <tr><td colspan="4" style="padding:14px; text-align:center;">Loading logs...</td></tr>
         </tbody>
       </table>
     </div>
 
   </div>
 
+  <!-- MODAL -->
+  <div id="custom-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modal-icon" style="font-size:3rem; margin-bottom:10px;">🚨</div>
+      <div id="modal-title" style="font-size:1.2rem; font-weight:800; margin-bottom:8px;">Broadcast Confirmation</div>
+      <div id="modal-body" style="font-size:0.9rem; color:#555; margin-bottom:20px;">Are you sure?</div>
+      <div style="display:flex; gap:10px;">
+        <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; font-weight:bold;">Cancel</button>
+        <button id="modal-confirm-btn" style="flex:1; padding:12px; border-radius:8px; border:none; background:#b71c1c; color:#fff; font-weight:bold;">Confirm Dispatch</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      loadSafetyLogs();
-    });
+    document.addEventListener("DOMContentLoaded", loadSafetyLogs);
 
     function handleTargetChange() {
       const type = document.getElementById("target-type").value;
       const group = document.getElementById("target-value-group");
-      const label = document.getElementById("target-value-label");
+      group.classList.toggle("hidden", type === "ALL");
+    }
 
-      if (type === "ALL") {
-        group.classList.add("hidden");
+    function setBroadcastLoading(isLoading) {
+      const btn = document.getElementById("btn-broadcast");
+      if (isLoading) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div> <span>BROADCASTING TO MEMBERS...</span>`;
       } else {
-        group.classList.remove("hidden");
-        if (type === "BRANCH") label.textContent = "Enter Branch Name (e.g. Main Branch)";
-        if (type === "PROVINCE") label.textContent = "Enter Province (e.g. Marinduque)";
-        if (type === "MUNICIPALITY") label.textContent = "Enter Municipality (e.g. Buenavista)";
-        if (type === "BARANGAY") label.textContent = "Enter Barangay (e.g. Dos)";
-        if (type === "MEMBER") label.textContent = "Enter 5-Digit Member ID (e.g. 00552)";
+        btn.disabled = false;
+        btn.innerHTML = `<span>⚡ BROADCAST EMERGENCY ALERT NOW</span>`;
       }
+    }
+
+    function showConfirmModal(title, body, onConfirm) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").textContent = body;
+      document.getElementById("modal-confirm-btn").onclick = () => {
+        closeModal();
+        onConfirm();
+      };
+      document.getElementById("custom-modal").classList.add("active");
+    }
+
+    function closeModal() {
+      document.getElementById("custom-modal").classList.remove("active");
     }
 
     async function dispatchEmergencyAlert() {
       const title = document.getElementById("alert-title").value;
       const message = document.getElementById("alert-message").value;
-      const category = document.getElementById("alert-category").value;
-      const priority = document.getElementById("alert-priority").value;
       const targetType = document.getElementById("target-type").value;
-      let targetValue = document.getElementById("target-value").value;
+      const targetValue = document.getElementById("target-value").value;
 
       if (!title || !message) {
-        alert("Please enter both Alert Title and Emergency Message!");
+        alert("Enter alert title and message!");
         return;
       }
 
-      if (targetType !== "ALL" && !targetValue) {
-        alert("Please enter the target filter value!");
-        return;
-      }
+      showConfirmModal(
+        "🚨 Confirm Broadcast Dispatch",
+        `Broadcast alert: "${title}" to target "${targetType}"?`,
+        async () => {
+          setBroadcastLoading(true);
 
-      const confirmDispatch = confirm(
-        `🚨 CONFIRM EMERGENCY BROADCAST\n\nTitle: ${title}\nTarget: ${targetType} (${targetValue || 'ALL'})\nPriority: ${priority}\n\nAre you sure you want to dispatch this alert immediately?`
-      );
+          try {
+            const res = await fetch(GAS_BACKEND_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                action: "broadcastEmergencyAlert",
+                title: title,
+                message: message,
+                category: document.getElementById("alert-category").value,
+                priority: document.getElementById("alert-priority").value,
+                targetType: targetType,
+                targetValue: targetValue,
+                senderId: "DRRMC-OFFICER-01"
+              })
+            }).then(r => r.json());
 
-      if (!confirmDispatch) return;
+            setBroadcastLoading(false);
 
-      const payload = {
-        action: "broadcastEmergencyAlert",
-        title: title,
-        message: message,
-        category: category,
-        priority: priority,
-        targetType: targetType,
-        targetValue: targetValue,
-        senderId: "DRRMC-OFFICER-01"
-      };
-
-      try {
-        const response = await fetch(GAS_BACKEND_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-        const res = await response.json();
-
-        if (res.success) {
-          const sum = res.summary;
-          document.getElementById("sum-id").textContent = sum.alertId;
-          document.getElementById("sum-targeted").textContent = sum.totalTargeted;
-          document.getElementById("sum-sent").textContent = sum.totalSent;
-          document.getElementById("sum-failed").textContent = sum.totalFailed;
-          document.getElementById("summary-box").classList.remove("hidden");
-
-          alert(`🚨 BROADCAST COMPLETE!\n\nDelivered: ${sum.totalSent} device(s)`);
-        } else {
-          alert("Broadcast Error: " + res.error);
+            if (res.success) {
+              const sum = res.summary;
+              document.getElementById("sum-targeted").textContent = sum.totalTargeted;
+              document.getElementById("sum-sent").textContent = sum.totalSent;
+              document.getElementById("sum-failed").textContent = sum.totalFailed;
+              document.getElementById("summary-grid").classList.remove("hidden");
+            } else {
+              alert("Broadcast Failed: " + res.error);
+            }
+          } catch (e) {
+            setBroadcastLoading(false);
+            alert("Network Error: " + e.message);
+          }
         }
-      } catch (err) {
-        alert("Network Error: " + err.message);
-      }
+      );
     }
 
     async function loadSafetyLogs() {
       const tbody = document.getElementById("safety-logs-body");
-      tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>Loading live member logs...</td></tr>";
-
       try {
         const res = await fetch(GAS_BACKEND_URL, {
           method: "POST",
@@ -239,23 +298,21 @@
         if (res.success && res.logs.length > 0) {
           tbody.innerHTML = res.logs.map(log => `
             <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 10px; font-weight: bold;">${log.memberId}</td>
-              <td style="padding: 10px;">
-                <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; color: white; background: ${log.type === 'SAFE' ? '#2e7d32' : '#b71c1c'};">
+              <td style="padding:10px; font-weight:bold;">${log.memberId}</td>
+              <td style="padding:10px;">
+                <span style="padding:3px 8px; border-radius:4px; color:white; font-weight:bold; background:${log.type === 'SAFE' ? '#2e7d32' : '#b71c1c'}">
                   ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
                 </span>
               </td>
-              <td style="padding: 10px;">
-                ${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 View GPS Map</a>` : 'No GPS'}
+              <td style="padding:10px;">
+                ${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2;">📍 Map</a>` : 'No GPS'}
               </td>
-              <td style="padding: 10px; font-size: 0.78rem; color: #555;">${new Date(log.time).toLocaleString()}</td>
+              <td style="padding:10px; font-size:0.75rem;">${new Date(log.time).toLocaleTimeString()}</td>
             </tr>
           `).join('');
-        } else {
-          tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>No member emergency logs found yet.</td></tr>";
         }
-      } catch(e) {
-        tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center; color:red;'>Failed to load safety logs.</td></tr>";
+      } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>Unable to load logs.</td></tr>";
       }
     }
   </script>
