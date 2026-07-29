@@ -97,86 +97,129 @@
     const VAPID_KEY = "_Frdcbq-Gjtw_J8BZ4XN0KX5OvITKsiY8zKz0ooO3uM";
 
     // -------------------------------------------------------------
-    // APP LOGIC
-    // -------------------------------------------------------------
-    firebase.initializeApp(firebaseConfig);
-    const messaging = firebase.messaging();
+  // APP INITIALIZATION
+  // -------------------------------------------------------------
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
 
-    document.addEventListener("DOMContentLoaded", checkPermission);
+  document.addEventListener("DOMContentLoaded", async () => {
+    await checkAndRegisterPermission();
+  });
 
-    function checkPermission() {
-      const statusEl = document.getElementById("permission-status");
-      const perm = Notification.permission;
-      statusEl.textContent = perm.toUpperCase();
-      statusEl.className = `status-badge ${perm}`;
+  async function checkAndRegisterPermission() {
+    const statusEl = document.getElementById("permission-status");
+    const perm = Notification.permission;
+    statusEl.textContent = perm.toUpperCase();
+    statusEl.className = `status-badge ${perm}`;
 
-      if (perm === "granted") {
-        document.getElementById("btn-request").style.display = "none";
-        document.getElementById("btn-test").style.display = "block";
-      }
+    if (perm === "granted") {
+      document.getElementById("btn-request").style.display = "none";
+      document.getElementById("btn-test").style.display = "block";
+      
+      // Auto-fetch token if permission is already granted!
+      await fetchAndRegisterToken();
+    } else {
+      document.getElementById("btn-request").style.display = "block";
+      document.getElementById("btn-test").style.display = "none";
     }
+  }
 
-    async function enablePushNotifications() {
-      try {
-        // Direct top-level prompt! No iframe restriction!
-        const permission = await Notification.requestPermission();
-        checkPermission();
-
-        if (permission === "granted") {
-          const token = await messaging.getToken({ vapidKey: VAPID_KEY });
-          if (token) {
-            document.getElementById("token-display").textContent = token;
-            await sendToBackend({
-              action: "registerDevice",
-              memberId: document.getElementById("member-id").value,
-              token: token,
-              deviceType: detectDevice(),
-              browser: detectBrowser()
-            });
-            alert("Device successfully registered for Emergency Alerts!");
-          }
-        } else {
-          alert("Permission was not granted.");
-        }
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
+  async function enablePushNotifications() {
+    try {
+      const permission = await Notification.requestPermission();
+      await checkAndRegisterPermission();
+    } catch (err) {
+      alert("Error requesting permission: " + err.message);
     }
+  }
 
-    async function triggerTestAlert() {
-      const token = document.getElementById("token-display").textContent;
-      const res = await sendToBackend({ action: "sendTestAlert", token: token });
-      if (res.success && res.response.success) {
-        alert("🚨 Test Alert Sent Successfully!");
-      } else {
-        alert("Alert dispatch failed: " + JSON.stringify(res));
-      }
-    }
+  async function fetchAndRegisterToken() {
+    const tokenDisplay = document.getElementById("token-display");
+    tokenDisplay.textContent = "Generating Token...";
 
-    async function sendToBackend(payload) {
-      const response = await fetch(GAS_BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
+    try {
+      // Register Service Worker for GitHub Pages
+      const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+
+      const token = await messaging.getToken({
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swRegistration
       });
-      return await response.json();
+
+      if (token) {
+        tokenDisplay.textContent = token;
+
+        // Register token with Google Apps Script Backend
+        const response = await sendToBackend({
+          action: "registerDevice",
+          memberId: document.getElementById("member-id").value || "MEM-10001",
+          token: token,
+          deviceType: detectDevice(),
+          browser: detectBrowser()
+        });
+
+        console.log("Backend Sync Result:", response);
+      } else {
+        tokenDisplay.textContent = "Failed to generate FCM Token.";
+      }
+    } catch (err) {
+      console.error("Token Fetch Error:", err);
+      tokenDisplay.textContent = "Error: " + err.message;
+    }
+  }
+
+  async function triggerTestAlert() {
+    const token = document.getElementById("token-display").textContent;
+    if (!token || token.startsWith("Error") || token === "Generating Token...") {
+      alert("No valid token registered yet!");
+      return;
     }
 
-    function detectDevice() {
-      const ua = navigator.userAgent;
-      if (/android/i.test(ua)) return "ANDROID";
-      if (/iPhone|iPad/.test(ua)) return "IOS";
-      if (/Win/.test(ua)) return "WINDOWS";
-      if (/Mac/.test(ua)) return "MAC";
-      return "DESKTOP";
-    }
+    const btn = document.getElementById("btn-test");
+    btn.disabled = true;
+    btn.textContent = "⏳ Sending Alert via FCM v1 Engine...";
 
-    function detectBrowser() {
-      const ua = navigator.userAgent;
-      if (ua.includes("Chrome")) return "Chrome";
-      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
-      if (ua.includes("Firefox")) return "Firefox";
-      return "Browser";
+    try {
+      const res = await sendToBackend({ action: "sendTestAlert", token: token });
+      btn.disabled = false;
+      btn.textContent = "🚨 Dispatch Test Emergency Alert";
+
+      if (res.success && res.response.success) {
+        alert("🚨 SUCCESS! Emergency Notification dispatched via FCM v1 API!");
+      } else {
+        alert("Dispatch Failed: " + JSON.stringify(res));
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = "🚨 Dispatch Test Emergency Alert";
+      alert("Network Error: " + e.message);
     }
-  </script>
+  }
+
+  async function sendToBackend(payload) {
+    const response = await fetch(GAS_BACKEND_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    return await response.json();
+  }
+
+  function detectDevice() {
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) return "ANDROID";
+    if (/iPhone|iPad/.test(ua)) return "IOS";
+    if (/Win/.test(ua)) return "WINDOWS";
+    if (/Mac/.test(ua)) return "MAC";
+    return "DESKTOP";
+  }
+
+  function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (ua.includes("Chrome")) return "Chrome";
+    if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+    if (ua.includes("Firefox")) return "Firefox";
+    return "Browser";
+  }
+</script>
 </body>
 </html>
