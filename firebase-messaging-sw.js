@@ -7,32 +7,33 @@ firebase.initializeApp({
   projectId: "care-drrmc-alerts",
   storageBucket: "care-drrmc-alerts.firebasestorage.app",
   messagingSenderId: "219371503949",
-  appId: "1:219371503949:web:423a6901e9f926c14b3704",
-  measurementId: "G-J80QY9Y1LE"
-
+  appId: "1:219371503949:web:423a6901e9f926c14b3704"
 });
 
 const messaging = firebase.messaging();
 
-// Handles background push notifications when browser/app is closed
+// BACKGROUND EMERGENCY NOTIFICATION LISTENER (Fires when tab is CLOSED or phone LOCKED)
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  console.log('[firebase-messaging-sw.js] Background Alert Received:', payload);
 
-  const notificationTitle = payload.notification.title || '🚨 EMERGENCY ALERT';
+  const title = payload.notification ? payload.notification.title : '🚨 EMERGENCY ALERT';
+  const body = payload.notification ? payload.notification.body : 'Critical warning from DRRMC';
+
   const notificationOptions = {
-    body: payload.notification.body,
+    body: body,
     icon: 'https://img.icons8.com/color/96/000000/siren.png',
     badge: 'https://img.icons8.com/color/48/000000/siren.png',
     vibrate: [300, 100, 300, 100, 300],
-    data: payload.data
+    requireInteraction: true,
+    data: payload.data || {}
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(title, notificationOptions);
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data ? event.notification.data.click_action || '/' : '/')
+    clients.openWindow('https://drrmc.github.io/care-app/')
   );
 });
