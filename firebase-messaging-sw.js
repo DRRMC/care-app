@@ -2,12 +2,14 @@ importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC3oVT1UjGLksc7pws6GMSkZC2L0Puj9Mk",
+  authDomain: "care-drrmc-alerts.firebaseapp.com",
+  projectId: "care-drrmc-alerts",
+  storageBucket: "care-drrmc-alerts.firebasestorage.app",
+  messagingSenderId: "219371503949",
+  appId: "1:219371503949:web:423a6901e9f926c14b3704",
+  measurementId: "G-J80QY9Y1LE"
+
 });
 
 const messaging = firebase.messaging();
