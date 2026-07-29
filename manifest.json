@@ -1,6 +1,6 @@
 {
-  "name": "CARE DRRMC Emergency Network",
-  "short_name": "CARE DRRMC",
+  "name": "DRRMC Emergency Network",
+  "short_name": "DRRMC",
   "description": "Cooperative Alert and Response for Emergencies",
   "start_url": "./index.html",
   "display": "standalone",
