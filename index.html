@@ -5,13 +5,12 @@
   <meta name="theme-color" content="#d32f2f">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DRRMC - Member Emergency Portal</title>
+  <title>APECC DRRMC - Emergency Network</title>
 
   <style>
     :root {
       --primary: #d32f2f;
       --primary-dark: #8e0000;
-      --primary-light: #ff6659;
       --secondary: #1976d2;
       --success: #2e7d32;
       --bg: #f4f6f8;
@@ -26,7 +25,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text-main); padding-bottom: 50px; }
 
-    /* HEADER */
     .header {
       background: linear-gradient(135deg, var(--primary-dark), var(--primary));
       color: white;
@@ -39,7 +37,6 @@
 
     .container { max-width: 480px; margin: -15px auto 0; padding: 0 16px; position: relative; z-index: 10; }
 
-    /* CARDS */
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -57,7 +54,6 @@
       justify-content: space-between;
     }
 
-    /* FORMS & INPUTS */
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
     .form-group input, .form-group select {
@@ -73,7 +69,6 @@
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
 
-    /* BUTTONS & SPINNERS */
     .btn {
       width: 100%;
       background: var(--primary);
@@ -95,7 +90,6 @@
     .btn:disabled { opacity: 0.65; cursor: not-allowed; }
     .btn-secondary { background: var(--secondary); box-shadow: 0 2px 6px rgba(25,118,210,0.3); }
     .btn-success { background: var(--success); box-shadow: 0 2px 6px rgba(46,125,50,0.3); }
-    .btn-dark { background: #424242; }
 
     .spinner {
       width: 18px;
@@ -107,7 +101,6 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* BADGES & BOXES */
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
     .badge.active { background: #e8f5e9; color: #2e7d32; }
     .badge.pending { background: #fff3e0; color: #ef6c00; }
@@ -125,9 +118,17 @@
       border: 1px dashed var(--border);
       margin-top: 6px;
     }
+    .device-info-box {
+      background: #eef2f5;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #333;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
     .hidden { display: none !important; }
 
-    /* CUSTOM MODAL POPUP */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.65);
@@ -145,9 +146,8 @@
     .modal-overlay.active .modal-card { transform: translateY(0); }
     .modal-icon { font-size: 3rem; margin-bottom: 10px; }
     .modal-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main); }
-    .modal-body { font-size: 0.9rem; color: #555; margin-bottom: 20px; line-height: 1.4; }
+    .modal-body { font-size: 0.9rem; color: #555; margin-bottom: 20px; line-height: 1.4; text-align: left; }
 
-    /* TOAST NOTIFICATION */
     #toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
       background: #323232; color: white; padding: 12px 24px; border-radius: 25px;
@@ -162,7 +162,6 @@
 </head>
 <body>
 
-  <!-- HEADER -->
   <div class="header">
     <h1>🚨 APECC - DRRMC</h1>
     <p>Cooperative Alert and Response for Emergencies</p>
@@ -177,10 +176,15 @@
         Enter your 5-Digit Cooperative Member ID to access emergency services.
       </p>
       <div class="form-group">
-        <label for="input-member-id">Member ID</label>
+        <label for="input-member-id">Member ID (5 Digits)*</label>
         <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.3rem; letter-spacing: 3px; text-align: center; font-weight: 800;">
       </div>
-      <button id="btn-login" class="btn" onclick="handleMemberLogin()">
+      
+      <div style="font-size: 0.75rem; color: #666; margin-bottom: 14px; text-align: justify; line-height: 1.3;">
+        🔒 <strong>Data Privacy Notice:</strong> By logging in, you consent under Republic Act 10173 (Data Privacy Act of 2012) to allow APECC DRRMC to securely process your member location and status for emergency broadcast and rescue operations.
+      </div>
+
+      <button id="btn-login" class="btn" onclick="promptLoginConfirmation()">
         <span>Access Emergency Portal</span>
       </button>
     </div>
@@ -196,37 +200,36 @@
         </h2>
 
         <div class="form-group">
-          <label for="field-fullname">Full Name</label>
-          <input type="text" id="field-fullname" placeholder="First Name Last Name">
+          <label for="field-fullname">Full Name*</label>
+          <input type="text" id="field-fullname" placeholder="Enter First Name & Last Name">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="field-mobile">Mobile Number</label>
+            <label for="field-mobile">Mobile Number*</label>
             <input type="tel" id="field-mobile" placeholder="09171234567">
           </div>
           <div class="form-group">
-            <label for="field-branch">Branch</label>
+            <label for="field-branch">Branch*</label>
             <select id="field-branch">
               <option value="">-- Select Branch --</option>
-              <!-- Options Central Office and B0001 - B1863 will be automatically generated here -->
             </select>
           </div>
         </div>
 
         <div class="form-group">
           <label for="field-province">Province*</label>
-          <input type="text" id="field-province" placeholder=" ">
+          <input type="text" id="field-province" placeholder="Enter Province (e.g. Batangas)">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="field-municipality">Municipality / City*</label>
-            <input type="text" id="field-municipality" placeholder=" ">
+            <input type="text" id="field-municipality" placeholder="Enter City/Town">
           </div>
           <div class="form-group">
             <label for="field-barangay">Barangay*</label>
-            <input type="text" id="field-barangay" placeholder=" ">
+            <input type="text" id="field-barangay" placeholder="Enter Barangay">
           </div>
         </div>
 
@@ -268,37 +271,44 @@
         </button>
 
         <div style="margin-top: 14px;">
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Registered Device Token:</label>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Registered Push Token:</label>
           <div id="token-display" class="token-box">Checking registration...</div>
         </div>
       </div>
 
       <!-- SYSTEM DIAGNOSTICS CARD -->
       <div class="card">
-        <h2>System Diagnostic</h2>
+        <h2>System Diagnostics</h2>
         <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()">
-          ⚡ Dispatch Test Notification
+          ⚡ Test Emergency Notification
         </button>
-        <button class="btn btn-dark" style="margin-top: 10px;" onclick="switchUser()">
-          Switch Member ID
-        </button>
+
+        <div class="device-info-box">
+          <strong>📱 Linked Device Details:</strong><br>
+          • <strong>Member ID:</strong> <span id="diag-member-id">--</span><br>
+          • <strong>Device Type:</strong> <span id="diag-device-type">--</span><br>
+          • <strong>Browser:</strong> <span id="diag-browser">--</span><br>
+          • <strong>Binding Status:</strong> <span style="color: #2e7d32; font-weight: bold;">🔒 Locked to this Device</span>
+        </div>
       </div>
 
     </div>
 
   </div>
 
-  <!-- CUSTOM REUSABLE MODAL DIALOG -->
+  <!-- MODAL DIALOG -->
   <div id="custom-modal" class="modal-overlay">
     <div class="modal-card">
       <div id="modal-icon" class="modal-icon">🚨</div>
-      <div id="modal-title" class="modal-title">Emergency Alert</div>
-      <div id="modal-body" class="modal-body">Modal body message content goes here.</div>
-      <button id="modal-action-btn" class="btn" onclick="closeModal()">OK</button>
+      <div id="modal-title" class="modal-title">Notice</div>
+      <div id="modal-body" class="modal-body">Modal content message...</div>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button id="modal-cancel-btn" class="btn" style="background: #757575;" onclick="closeModal()">Cancel</button>
+        <button id="modal-action-btn" class="btn" onclick="closeModal()">OK</button>
+      </div>
     </div>
   </div>
 
-  <!-- TOAST MESSAGE -->
   <div id="toast">Message notification</div>
 
   <script>
@@ -319,39 +329,37 @@
     const messaging = firebase.messaging();
     let currentMember = null;
 
-    document.addEventListener("DOMContentLoaded", () => {
-  // Populate Branch Dropdown dynamically (Central Office + B0001 to B1863)
-  populateBranchDropdown();
+    document.addEventListener("DOMContentLoaded", async () => {
+      populateBranchDropdown();
 
-  const savedMemberId = localStorage.getItem("care_member_id");
-  if (savedMemberId) {
-    document.getElementById("input-member-id").value = savedMemberId;
-  }
-});
+      // Check if user is already registered & saved on this device
+      const savedMemberId = localStorage.getItem("care_member_id");
+      if (savedMemberId) {
+        document.getElementById("input-member-id").value = savedMemberId;
+        // Directly enter dashboard for return visits
+        await autoLoginSavedUser(savedMemberId);
+      }
+    });
 
-function populateBranchDropdown() {
-  const select = document.getElementById("field-branch");
-  if (!select) return;
+    function populateBranchDropdown() {
+      const select = document.getElementById("field-branch");
+      if (!select) return;
+      select.innerHTML = '<option value="">-- Select Branch --</option>';
 
-  select.innerHTML = '<option value="">-- Select Branch --</option>';
+      const centralOpt = document.createElement("option");
+      centralOpt.value = "Central Office";
+      centralOpt.textContent = "Central Office";
+      select.appendChild(centralOpt);
 
-  // 1. Add Central Office
-  const centralOpt = document.createElement("option");
-  centralOpt.value = "Central Office";
-  centralOpt.textContent = "Central Office";
-  select.appendChild(centralOpt);
+      for (let i = 1; i <= 1863; i++) {
+        const code = "B" + String(i).padStart(4, '0');
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        select.appendChild(opt);
+      }
+    }
 
-  // 2. Loop B0001 to B1863
-  for (let i = 1; i <= 1863; i++) {
-    const code = "B" + String(i).padStart(4, '0'); // Formats 1 to "0001" -> "B0001"
-    const opt = document.createElement("option");
-    opt.value = code;
-    opt.textContent = code;
-    select.appendChild(opt);
-  }
-}
-
-    // UX HELPERS: BUTTON LOADING SPINNER & CUSTOM MODALS
     function setBtnLoading(btnId, isLoading, originalText) {
       const btn = document.getElementById(btnId);
       if (!btn) return;
@@ -364,10 +372,18 @@ function populateBranchDropdown() {
       }
     }
 
-    function showModal(icon, title, body, btnText = "OK", onConfirm = null) {
+    function showModal(icon, title, body, btnText = "OK", onConfirm = null, showCancel = false) {
       document.getElementById("modal-icon").textContent = icon;
       document.getElementById("modal-title").textContent = title;
-      document.getElementById("modal-body").textContent = body;
+      document.getElementById("modal-body").innerHTML = body;
+      
+      const cancelBtn = document.getElementById("modal-cancel-btn");
+      if (showCancel) {
+        cancelBtn.classList.remove("hidden");
+      } else {
+        cancelBtn.classList.add("hidden");
+      }
+
       const btn = document.getElementById("modal-action-btn");
       btn.textContent = btnText;
       btn.onclick = () => {
@@ -389,70 +405,135 @@ function populateBranchDropdown() {
     }
 
     function formatToFiveDigits(val) {
-      if (!val) return "00000";
+      if (!val) return "";
       let cleaned = val.replace(/\D/g, '');
+      if (!cleaned) return "";
       while (cleaned.length < 5) cleaned = "0" + cleaned;
       return cleaned.substring(cleaned.length - 5);
     }
 
-    async function handleMemberLogin() {
+    // LOCK IN CONFIRMATION POPUP BEFORE REGISTRATION
+    function promptLoginConfirmation() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
+
+      if (!formattedId || formattedId.length !== 5) {
+        showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Cooperative Member ID.");
+        return;
+      }
+
       document.getElementById("input-member-id").value = formattedId;
 
+      showModal(
+        "🔒 Confirm Device Link",
+        `Are you sure Member ID <strong>${formattedId}</strong> belongs to you?<br><br>` +
+        `⚠️ <em>Important: Once proceeded, this gadget will be bound to Member ID #${formattedId} for disaster communications.</em>`,
+        "Yes, Proceed",
+        () => handleMemberLogin(formattedId),
+        true // show cancel button
+      );
+    }
+
+    async function handleMemberLogin(formattedId) {
       setBtnLoading("btn-login", true, "Access Emergency Portal");
 
       try {
-        const res = await sendToBackend({ action: "getOrRegisterMember", memberId: formattedId });
+        const res = await sendToBackend({ 
+          action: "getOrRegisterMember", 
+          memberId: formattedId,
+          deviceFingerprint: getDeviceSignature()
+        });
+
         setBtnLoading("btn-login", false, "Access Emergency Portal");
 
         if (res.success) {
           localStorage.setItem("care_member_id", formattedId);
           currentMember = res.member;
           populateDashboard(currentMember);
+          
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-dashboard").classList.remove("hidden");
+          
           await checkAndRegisterFCM();
-          showToast("Welcome back, Member #" + formattedId);
+          showToast("Welcome Member #" + formattedId);
         } else {
-          showModal("❌", "Login Error", res.error || "Unable to find member account.");
+          showModal("❌", "Registration Blocked", res.error || "This Member ID is already registered to another device.");
         }
       } catch (err) {
         setBtnLoading("btn-login", false, "Access Emergency Portal");
-        showModal("⚠️", "Network Error", "Unable to connect to DRRMC Backend. Check internet.");
+        showModal("⚠️", "Network Error", "Unable to connect to DRRMC Backend. Check internet connection.");
+      }
+    }
+
+    async function autoLoginSavedUser(formattedId) {
+      try {
+        const res = await sendToBackend({ action: "getOrRegisterMember", memberId: formattedId });
+        if (res.success) {
+          currentMember = res.member;
+          populateDashboard(currentMember);
+          document.getElementById("view-login").classList.add("hidden");
+          document.getElementById("view-dashboard").classList.remove("hidden");
+          await checkAndRegisterFCM();
+        }
+      } catch (e) {
+        console.warn("Auto-login failed:", e);
       }
     }
 
     function populateDashboard(member) {
       document.getElementById("badge-member-id").textContent = "ID: " + member.member_id;
-      document.getElementById("field-fullname").value = member.full_name || "";
+      document.getElementById("field-fullname").value = member.full_name === "New Member" ? "" : (member.full_name || "");
       document.getElementById("field-mobile").value = member.mobile_number || "";
-      document.getElementById("field-branch").value = member.branch || "Main Branch";
-      document.getElementById("field-province").value = member.province || "";
-      document.getElementById("field-municipality").value = member.municipality || "";
-      document.getElementById("field-barangay").value = member.barangay || "";
+      document.getElementById("field-branch").value = member.branch || "";
+      document.getElementById("field-province").value = member.province === "Default Province" ? "" : (member.province || "");
+      document.getElementById("field-municipality").value = member.municipality === "Default Municipality" ? "" : (member.municipality || "");
+      document.getElementById("field-barangay").value = member.barangay === "Default Barangay" ? "" : (member.barangay || "");
+
+      // Update Diagnostics Display
+      document.getElementById("diag-member-id").textContent = member.member_id;
+      document.getElementById("diag-device-type").textContent = detectDeviceType();
+      document.getElementById("diag-browser").textContent = detectBrowser();
     }
 
+    // SAVE PROFILE WITH MANDATORY FORM VALIDATION
     async function saveProfileChanges() {
       if (!currentMember) return;
+
+      const fullName = document.getElementById("field-fullname").value.trim();
+      const mobile = document.getElementById("field-mobile").value.trim();
+      const branch = document.getElementById("field-branch").value.trim();
+      const province = document.getElementById("field-province").value.trim();
+      const municipality = document.getElementById("field-municipality").value.trim();
+      const barangay = document.getElementById("field-barangay").value.trim();
+
+      // STRICT MANDATORY FIELD CHECK
+      if (!fullName || !mobile || !branch || !province || !municipality || !barangay) {
+        showModal(
+          "⚠️", 
+          "Required Fields Missing", 
+          "All profile fields marked with (*) are <strong>required</strong>. Please complete all details before saving your location."
+        );
+        return;
+      }
+
       setBtnLoading("btn-save-profile", true, "Save & Update Location");
 
       const payload = {
         action: "updateMemberProfile",
         memberId: currentMember.member_id,
-        fullName: document.getElementById("field-fullname").value,
-        mobileNumber: document.getElementById("field-mobile").value,
-        branch: document.getElementById("field-branch").value,
-        province: document.getElementById("field-province").value,
-        municipality: document.getElementById("field-municipality").value,
-        barangay: document.getElementById("field-barangay").value
+        fullName: fullName,
+        mobileNumber: mobile,
+        branch: branch,
+        province: province,
+        municipality: municipality,
+        barangay: barangay
       };
 
       try {
         const res = await sendToBackend(payload);
         setBtnLoading("btn-save-profile", false, "Save & Update Location");
         if (res.success) {
-          showModal("✅", "Profile Saved", "Your demographic and location profile have been updated.");
+          showModal("✅", "Profile Saved", "Your demographic and disaster location profile have been updated.");
         } else {
           showModal("❌", "Save Error", res.error);
         }
@@ -509,13 +590,19 @@ function populateBranchDropdown() {
       const badge = document.getElementById("badge-perm");
       const perm = Notification.permission;
       badge.textContent = perm.toUpperCase();
-      badge.className = `badge ${perm === 'granted' ? 'active' : 'denied'}`;
-
+      
       if (perm === "granted") {
+        badge.className = "badge active";
         document.getElementById("btn-enable-push").classList.add("hidden");
         await fetchAndSyncToken();
-      } else {
+      } else if (perm === "denied") {
+        badge.className = "badge denied";
         document.getElementById("btn-enable-push").classList.remove("hidden");
+        document.getElementById("token-display").textContent = "⚠️ Notifications blocked in browser settings. Please click lock icon in address bar to unblock.";
+      } else {
+        badge.className = "badge pending";
+        document.getElementById("btn-enable-push").classList.remove("hidden");
+        document.getElementById("token-display").textContent = "Action Required: Click 'Enable Emergency Alerts' above.";
       }
     }
 
@@ -530,7 +617,7 @@ function populateBranchDropdown() {
 
     async function fetchAndSyncToken() {
       const tokenDisplay = document.getElementById("token-display");
-      tokenDisplay.textContent = "Syncing FCM token...";
+      tokenDisplay.textContent = "Generating Push Token...";
 
       try {
         await navigator.serviceWorker.register('./firebase-messaging-sw.js');
@@ -544,38 +631,33 @@ function populateBranchDropdown() {
             action: "registerDevice",
             memberId: currentMember ? currentMember.member_id : "00000",
             token: token,
-            deviceType: /android/i.test(navigator.userAgent) ? "ANDROID" : "IOS",
-            browser: "Browser"
+            deviceType: detectDeviceType(),
+            browser: detectBrowser()
           });
         } else {
-          tokenDisplay.textContent = "Failed to obtain token.";
+          tokenDisplay.textContent = "Failed to obtain push token.";
         }
       } catch (err) {
-        tokenDisplay.textContent = "Error: " + err.message;
+        tokenDisplay.textContent = "FCM Registration Warning: " + err.message;
       }
     }
 
     async function triggerTestAlert() {
       const token = document.getElementById("token-display").textContent;
       if (!token || token.length < 20) {
-        showModal("⚠️", "No Token", "Please enable notifications first.");
+        showModal("⚠️", "No Token Available", "Please enable emergency alerts first.");
         return;
       }
 
-      setBtnLoading("btn-test-alert", true, "Dispatch Test Notification");
+      setBtnLoading("btn-test-alert", true, "Test Emergency Notification");
       const res = await sendToBackend({ action: "sendTestAlert", token: token });
-      setBtnLoading("btn-test-alert", false, "Dispatch Test Notification");
+      setBtnLoading("btn-test-alert", false, "Test Emergency Notification");
 
       if (res.success && res.response.success) {
-        showModal("🔔", "Test Dispatched", "Test alert delivered to your device via FCM v1.");
+        showModal("🔔", "Test Dispatched", "Test alert successfully sent to your device!");
       } else {
         showModal("❌", "Dispatch Error", JSON.stringify(res));
       }
-    }
-
-    function switchUser() {
-      localStorage.removeItem("care_member_id");
-      location.reload();
     }
 
     async function sendToBackend(payload) {
@@ -583,8 +665,30 @@ function populateBranchDropdown() {
       return await res.json();
     }
 
+    function detectDeviceType() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) return "ANDROID";
+      if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "IOS";
+      if (/Win/i.test(ua)) return "WINDOWS";
+      if (/Mac/i.test(ua)) return "MAC";
+      return "MOBILE/DESKTOP";
+    }
+
+    function detectBrowser() {
+      const ua = navigator.userAgent;
+      if (ua.includes("Chrome")) return "Chrome";
+      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+      if (ua.includes("Firefox")) return "Firefox";
+      if (ua.includes("Edg")) return "Edge";
+      return "Browser";
+    }
+
+    function getDeviceSignature() {
+      return detectDeviceType() + "-" + detectBrowser();
+    }
+
     messaging.onMessage((payload) => {
-      showModal("🚨", payload.notification.title || "EMERGENCY ALERT", payload.notification.body || "Follow official instructions.");
+      showModal("🚨", payload.notification.title || "EMERGENCY ALERT", payload.notification.body || "Follow official emergency instructions.");
     });
   </script>
 </body>
