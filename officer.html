@@ -256,15 +256,16 @@
         <table>
           <thead>
             <tr>
-              <th>Member ID</th>
+              <th>Member ID & Name</th>
               <th>Status</th>
+              <th>Registered Address</th>
               <th>GPS Location</th>
               <th>Date & Time</th>
               <th>Officer Action</th>
             </tr>
           </thead>
           <tbody id="safety-logs-body">
-            <tr><td colspan="5" style="text-align:center;">Loading safety logs...</td></tr>
+            <tr><td colspan="6" style="text-align:center;">Loading safety logs...</td></tr>
           </tbody>
         </table>
       </div>
@@ -598,6 +599,10 @@
             const formattedTimeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             const fullDateTime = `${formattedDateStr} - ${formattedTimeStr}`;
 
+            // Combine Barangay, Municipality, Province
+            const addressParts = [log.barangay, log.municipality, log.province].filter(Boolean);
+            const registeredAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No Address Set';
+
             let actionButton = '';
             if (log.resolution === 'PENDING' || !log.resolution) {
               if (log.type === 'SAFE') {
@@ -615,23 +620,27 @@
 
             return `
               <tr>
-                <td style="font-weight:bold;">${log.memberId}</td>
+                <td>
+                  <strong>${log.fullName}</strong><br>
+                  <small style="color:#666;">ID: ${log.memberId}</small>
+                </td>
                 <td>
                   <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
                     ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
                   </span>
                 </td>
+                <td style="font-size:0.82rem; color:#333;">${registeredAddress}</td>
                 <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 Open Map</a>` : 'No GPS'}</td>
-                <td style="font-size:0.8rem; color:#444;">${fullDateTime}</td>
+                <td style="font-size:0.78rem; color:#555;">${fullDateTime}</td>
                 <td>${actionButton}</td>
               </tr>
             `;
           }).join('');
         } else {
-          tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No safety logs recorded yet.</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No safety logs recorded yet.</td></tr>";
         }
       } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Unable to load logs.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Unable to load logs.</td></tr>";
       }
     }
 
