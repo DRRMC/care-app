@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DRRMC - Officer Command Center</title>
+  <title>APECC DRRMC - Officer Command Center</title>
   <style>
     :root {
       --primary: #b71c1c;
       --primary-dark: #7f0000;
+      --secondary: #1976d2;
+      --success: #2e7d32;
       --bg: #eef2f5;
       --surface: #ffffff;
       --text: #212121;
@@ -20,12 +22,13 @@
 
     .header {
       background: linear-gradient(135deg, #7f0000, #b71c1c);
-      color: white; padding: 28px 16px; text-align: center; box-shadow: var(--shadow);
+      color: white; padding: 20px 16px; text-align: center; box-shadow: var(--shadow);
+      display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; border-radius: 0 0 12px 12px;
     }
-    .header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.5px; }
-    .header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+    .header h1 { font-size: 1.5rem; font-weight: 800; }
+    .header p { font-size: 0.85rem; opacity: 0.9; }
 
-    .container { max-width: 750px; margin: 20px auto; padding: 0 16px; }
+    .container { max-width: 900px; margin: 20px auto; padding: 0 16px; }
 
     .card {
       background: var(--surface); border-radius: var(--radius); padding: 24px;
@@ -36,184 +39,221 @@
       padding-bottom: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;
     }
 
+    /* NAV TABS */
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab-btn {
+      flex: 1; padding: 12px; border: 1px solid var(--border); background: #e0e0e0;
+      border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s;
+    }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary-dark); }
+
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #444; margin-bottom: 6px; text-transform: uppercase; }
     .form-group input, .form-group select, .form-group textarea {
       width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none;
     }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
 
-    .btn-broadcast {
-      width: 100%; background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white;
-      border: none; padding: 16px; border-radius: 8px; font-size: 1.15rem; font-weight: 800;
-      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
-      box-shadow: 0 4px 12px rgba(183, 28, 28, 0.35); transition: all 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+    .btn {
+      width: 100%; background: var(--primary); color: white; border: none; padding: 14px;
+      border-radius: 8px; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
     }
-    .btn-broadcast:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-success { background: var(--success); }
+    .btn-secondary { background: var(--secondary); }
 
     .spinner {
-      width: 22px; height: 22px; border: 3px solid #ffffff; border-top: 3px solid transparent;
-      border-radius: 50%; animation: spin 0.8s linear infinite;
+      width: 20px; height: 20px; border: 3px solid #ffffff; border-top: 3px solid transparent;
+      border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* SUMMARY TILES */
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-    .tile { background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
-    .tile-val { font-size: 1.5rem; font-weight: 800; color: var(--primary-dark); }
-    .tile-lbl { font-size: 0.75rem; font-weight: 700; color: #666; text-transform: uppercase; }
-
     .hidden { display: none !important; }
 
-    /* CUSTOM MODAL POPUP */
+    /* TABLE STYLES */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f0f4f8; font-weight: bold; }
+
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: bold; text-transform: uppercase; }
+    .badge-active { background: #e8f5e9; color: #2e7d32; }
+    .badge-resigned { background: #ffebee; color: #c62828; }
+
+    .action-btn { padding: 5px 10px; border-radius: 4px; border: none; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
+    .btn-unlink { background: #ef6c00; }
+    .btn-deactivate { background: #c62828; }
+
+    /* MODAL */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s;
     }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal-card {
-      background: white; border-radius: 16px; padding: 24px; text-align: center;
-      max-width: 420px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
-    }
+    .modal-card { background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; text-align: center; }
   </style>
 </head>
 <body>
 
+  <!-- HEADER -->
   <div class="header">
-    <h1>🚨 APECC DRRMC COMMAND CENTER</h1>
-    <p>Disaster Risk Reduction Management Emergency Broadcast Engine</p>
+    <div>
+      <h1>🚨 DRRMC COMMAND CENTER</h1>
+      <p>APECC Emergency Broadcast & Governance Portal</p>
+    </div>
+    <button id="btn-logout" class="action-btn btn-deactivate hidden" onclick="logoutOfficer()">Logout</button>
   </div>
 
   <div class="container">
 
-    <div class="card">
-      <h2>Broadcast Emergency Alert</h2>
-
+    <!-- VIEW 1: OFFICER LOGIN -->
+    <div id="view-login" class="card" style="max-width: 420px; margin: 40px auto;">
+      <h2>Officer Login</h2>
       <div class="form-group">
-        <label for="alert-title">Emergency Alert Title</label>
-        <input type="text" id="alert-title" placeholder="e.g. 🚨 RED ALERT: Typhoon Evacuation Warning">
+        <label for="officer-id">Officer ID or Member ID</label>
+        <input type="text" id="officer-id" placeholder="e.g. OFF-001">
       </div>
-
       <div class="form-group">
-        <label for="alert-message">Emergency Message Body</label>
-        <textarea id="alert-message" rows="3" placeholder="Type instructions for Cooperative Members..."></textarea>
+        <label for="officer-password">Password</label>
+        <input type="password" id="officer-password" placeholder="••••••••">
       </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="alert-category">Disaster Category</label>
-          <select id="alert-category">
-            <option value="TYPHOON">🌀 Typhoon</option>
-            <option value="FLOOD">🌊 Flood</option>
-            <option value="EARTHQUAKE">🌋 Earthquake</option>
-            <option value="FIRE">🔥 Fire Emergency</option>
-            <option value="LANDSLIDE">⛰️ Landslide Warning</option>
-            <option value="ADVISORY">📢 General Advisory</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="alert-priority">Priority Level</label>
-          <select id="alert-priority">
-            <option value="CRITICAL">🚨 CRITICAL (High Vibration & Sound)</option>
-            <option value="HIGH">⚠️ HIGH</option>
-            <option value="MODERATE">ℹ️ MODERATE</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="target-type">Recipient Filter</label>
-        <select id="target-type" onchange="handleTargetChange()">
-          <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
-          <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
-          <option value="PROVINCE">📍 By Registered Province</option>
-          <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
-          <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
-        </select>
-      </div>
-
-      <!-- DYNAMIC RECIPIENT TARGET SELECTORS -->
-      <div id="target-value-group" class="form-group hidden">
-        <label id="target-value-label" for="target-value-input">Target Area</label>
-
-        <!-- 1. Branch Dropdown -->
-        <select id="target-branch-select" class="hidden">
-          <option value="">-- Select Target Branch --</option>
-        </select>
-
-        <!-- 2. Dynamic Province Dropdown -->
-        <select id="target-province-select" class="hidden">
-          <option value="">-- Loading Provinces from Member Database... --</option>
-        </select>
-
-        <!-- 3. Dynamic Municipality Dropdown -->
-        <select id="target-municipality-select" class="hidden">
-          <option value="">-- Loading Municipalities from Member Database... --</option>
-        </select>
-
-        <!-- 4. Member ID Input Box -->
-        <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
-      </div>
-
-      <button id="btn-broadcast" class="btn-broadcast" onclick="dispatchEmergencyAlert()">
-        <span>⚡ BROADCAST EMERGENCY ALERT NOW</span>
+      <button id="btn-officer-login" class="btn" onclick="handleOfficerLogin()">
+        Login to Command Center
       </button>
-
-      <div id="summary-grid" class="summary-grid hidden">
-        <div class="tile">
-          <div id="sum-targeted" class="tile-val">0</div>
-          <div class="tile-lbl">Targeted</div>
-        </div>
-        <div class="tile">
-          <div id="sum-sent" class="tile-val" style="color:#2e7d32;">0</div>
-          <div class="tile-lbl">Delivered</div>
-        </div>
-        <div class="tile">
-          <div id="sum-failed" class="tile-val" style="color:#c62828;">0</div>
-          <div class="tile-lbl">Failed</div>
-        </div>
-      </div>
     </div>
 
-    <!-- LIVE SAFETY FEED -->
-    <div class="card">
-      <h2>
-        <span>Live Member Safety Logs</span>
-        <button onclick="loadSafetyLogs()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">🔄 Refresh</button>
-      </h2>
+    <!-- VIEW 2: COMMAND CENTER DASHBOARD -->
+    <div id="view-dashboard" class="hidden">
 
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
-        <thead>
-          <tr style="background: #f0f4f8; text-align: left;">
-            <th style="padding: 10px;">Member ID</th>
-            <th style="padding: 10px;">Status</th>
-            <th style="padding: 10px;">GPS Location</th>
-            <th style="padding: 10px;">Timestamp</th>
-          </tr>
-        </thead>
-        <tbody id="safety-logs-body">
-          <tr><td colspan="4" style="padding:14px; text-align:center;">Loading logs...</td></tr>
-        </tbody>
-      </table>
+      <!-- NAVIGATION TABS -->
+      <div class="nav-tabs">
+        <div id="tab-broadcast" class="tab-btn active" onclick="switchTab('broadcast')">⚡ Broadcast Alert</div>
+        <div id="tab-members" class="tab-btn" onclick="switchTab('members')">👥 Member Control</div>
+        <div id="tab-safety" class="tab-btn" onclick="switchTab('safety')">💚 Safety Logs</div>
+      </div>
+
+      <!-- TAB 1: EMERGENCY BROADCAST -->
+      <div id="sec-broadcast" class="card">
+        <h2>Broadcast Emergency Alert</h2>
+
+        <div class="form-group">
+          <label for="alert-title">Emergency Alert Title</label>
+          <input type="text" id="alert-title" placeholder="e.g. 🚨 RED ALERT: Typhoon Evacuation Warning">
+        </div>
+
+        <div class="form-group">
+          <label for="alert-message">Emergency Message Body</label>
+          <textarea id="alert-message" rows="3" placeholder="Type instructions for Cooperative Members..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="alert-category">Disaster Category</label>
+            <select id="alert-category">
+              <option value="TYPHOON">🌀 Typhoon</option>
+              <option value="FLOOD">🌊 Flood</option>
+              <option value="EARTHQUAKE">🌋 Earthquake</option>
+              <option value="FIRE">🔥 Fire Emergency</option>
+              <option value="LANDSLIDE">⛰️ Landslide Warning</option>
+              <option value="ADVISORY">📢 General Advisory</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="alert-priority">Priority Level</label>
+            <select id="alert-priority">
+              <option value="CRITICAL">🚨 CRITICAL (High Vibration & Sound)</option>
+              <option value="HIGH">⚠️ HIGH</option>
+              <option value="MODERATE">ℹ️ MODERATE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="target-type">Recipient Filter</label>
+          <select id="target-type" onchange="handleTargetChange()">
+            <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
+            <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
+            <option value="PROVINCE">📍 By Registered Province</option>
+            <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
+            <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
+          </select>
+        </div>
+
+        <div id="target-value-group" class="form-group hidden">
+          <label id="target-value-label">Target Filter</label>
+          <select id="target-branch-select" class="hidden"></select>
+          <select id="target-province-select" class="hidden"></select>
+          <select id="target-municipality-select" class="hidden"></select>
+          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
+        </div>
+
+        <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
+          ⚡ BROADCAST EMERGENCY ALERT NOW
+        </button>
+      </div>
+
+      <!-- TAB 2: MEMBER & DEVICE GOVERNANCE -->
+      <div id="sec-members" class="card hidden">
+        <h2>
+          <span>Cooperative Member Registry</span>
+          <button onclick="loadMembersList()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer;">🔄 Refresh</button>
+        </h2>
+
+        <div class="form-group">
+          <input type="text" id="search-member" placeholder="🔍 Search Member ID, Name, or Branch..." onkeyup="filterMembersTable()">
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Member ID</th>
+              <th>Full Name</th>
+              <th>Branch / Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="members-table-body">
+            <tr><td colspan="5" style="text-align:center;">Loading members...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 3: LIVE SAFETY LOGS -->
+      <div id="sec-safety" class="card hidden">
+        <h2>
+          <span>Live Safety Feed</span>
+          <button onclick="loadSafetyLogs()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer;">🔄 Refresh</button>
+        </h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Member ID</th>
+              <th>Status</th>
+              <th>GPS Location</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="safety-logs-body">
+            <tr><td colspan="4" style="text-align:center;">Loading safety logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </div>
 
   </div>
 
-  <!-- MODAL -->
+  <!-- MODAL DIALOG -->
   <div id="custom-modal" class="modal-overlay">
     <div class="modal-card">
       <div id="modal-icon" style="font-size:3rem; margin-bottom:10px;">🚨</div>
-      <div id="modal-title" style="font-size:1.2rem; font-weight:800; margin-bottom:8px;">Broadcast Confirmation</div>
-      <div id="modal-body" style="font-size:0.9rem; color:#555; margin-bottom:20px;">Are you sure?</div>
+      <div id="modal-title" style="font-size:1.2rem; font-weight:800; margin-bottom:8px;">Notice</div>
+      <div id="modal-body" style="font-size:0.9rem; color:#555; margin-bottom:20px;">Modal content...</div>
       <div style="display:flex; gap:10px;">
         <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; font-weight:bold;">Cancel</button>
-        <button id="modal-confirm-btn" style="flex:1; padding:12px; border-radius:8px; border:none; background:#b71c1c; color:#fff; font-weight:bold;">Confirm Dispatch</button>
+        <button id="modal-confirm-btn" style="flex:1; padding:12px; border-radius:8px; border:none; background:#b71c1c; color:#fff; font-weight:bold;">Confirm</button>
       </div>
     </div>
   </div>
@@ -221,31 +261,162 @@
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
-    let cachedLocations = { provinces: [], municipalities: [] };
+    let currentOfficer = null;
+    let cachedMembers = [];
 
     document.addEventListener("DOMContentLoaded", () => {
-      populateOfficerBranchDropdown();
-      fetchMemberLocations();
-      loadSafetyLogs();
+      const savedOfficer = localStorage.getItem("care_officer_session");
+      if (savedOfficer) {
+        currentOfficer = JSON.parse(savedOfficer);
+        showDashboard();
+      }
     });
 
+    async function handleOfficerLogin() {
+      const id = document.getElementById("officer-id").value;
+      const pass = document.getElementById("officer-password").value;
+
+      if (!id || !pass) {
+        alert("Enter Officer ID and Password!");
+        return;
+      }
+
+      setBtnLoading("btn-officer-login", true, "Login to Command Center");
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "officerLogin", officerId: id, password: pass })
+        }).then(r => r.json());
+
+        setBtnLoading("btn-officer-login", false, "Login to Command Center");
+
+        if (res.success) {
+          currentOfficer = res.officer;
+          localStorage.setItem("care_officer_session", JSON.stringify(currentOfficer));
+          showDashboard();
+        } else {
+          alert("Login Failed: " + res.error);
+        }
+      } catch (e) {
+        setBtnLoading("btn-officer-login", false, "Login to Command Center");
+        alert("Network Error: " + e.message);
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-dashboard").classList.remove("hidden");
+      document.getElementById("btn-logout").classList.remove("hidden");
+
+      populateOfficerBranchDropdown();
+      fetchMemberLocations();
+      loadMembersList();
+      loadSafetyLogs();
+    }
+
+    function logoutOfficer() {
+      localStorage.removeItem("care_officer_session");
+      location.reload();
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.getElementById("sec-broadcast").classList.add("hidden");
+      document.getElementById("sec-members").classList.add("hidden");
+      document.getElementById("sec-safety").classList.add("hidden");
+
+      document.getElementById("tab-" + tabName).classList.add("active");
+      document.getElementById("sec-" + tabName).classList.remove("hidden");
+    }
+
+    /* MEMBER GOVERNANCE FUNCTIONS */
+    async function loadMembersList() {
+      const tbody = document.getElementById("members-table-body");
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "getMembersList" })
+        }).then(r => r.json());
+
+        if (res.success) {
+          cachedMembers = res.members;
+          renderMembersTable(cachedMembers);
+        }
+      } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Unable to load members.</td></tr>";
+      }
+    }
+
+    function renderMembersTable(members) {
+      const tbody = document.getElementById("members-table-body");
+      if (members.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No members registered yet.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = members.map(m => `
+        <tr>
+          <td style="font-weight:bold;">${m.memberId}</td>
+          <td>${m.fullName}</td>
+          <td>${m.branch || '--'} (${m.municipality || '--'})</td>
+          <td>
+            <span class="badge ${m.status === 'ACTIVE' ? 'badge-active' : 'badge-resigned'}">${m.status}</span>
+          </td>
+          <td>
+            <button class="action-btn btn-unlink" onclick="unlinkDevice('${m.memberId}')">Unlink Phone</button>
+            ${m.status === 'ACTIVE' ? `<button class="action-btn btn-deactivate" onclick="deactivateMember('${m.memberId}')">Set Resigned</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterMembersTable() {
+      const q = document.getElementById("search-member").value.toLowerCase();
+      const filtered = cachedMembers.filter(m => 
+        m.memberId.includes(q) || m.fullName.toLowerCase().includes(q) || m.branch.toLowerCase().includes(q)
+      );
+      renderMembersTable(filtered);
+    }
+
+    async function deactivateMember(memberId) {
+      if (!confirm(`Are you sure you want to set Member #${memberId} as RESIGNED? Their device access will be revoked.`)) return;
+
+      const res = await fetch(GAS_BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "updateMemberStatus", memberId: memberId, status: "RESIGNED" })
+      }).then(r => r.json());
+
+      if (res.success) {
+        alert(res.message);
+        loadMembersList();
+      } else {
+        alert("Error: " + res.error);
+      }
+    }
+
+    async function unlinkDevice(memberId) {
+      if (!confirm(`Unlink phone token for Member #${memberId}? They will need to re-register their device.`)) return;
+
+      const res = await fetch(GAS_BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "unlinkMemberDevice", memberId: memberId })
+      }).then(r => r.json());
+
+      if (res.success) {
+        alert(res.message);
+        loadMembersList();
+      }
+    }
+
+    /* BROADCASTING FUNCTIONS */
     function populateOfficerBranchDropdown() {
       const select = document.getElementById("target-branch-select");
       if (!select) return;
-
-      select.innerHTML = '<option value="">-- Select Target Branch --</option>';
-
-      const centralOpt = document.createElement("option");
-      centralOpt.value = "Central Office";
-      centralOpt.textContent = "Central Office";
-      select.appendChild(centralOpt);
-
+      select.innerHTML = '<option value="">-- Select Target Branch --</option><option value="Central Office">Central Office</option>';
       for (let i = 1; i <= 1863; i++) {
         const code = "B" + String(i).padStart(4, '0');
-        const opt = document.createElement("option");
-        opt.value = code;
-        opt.textContent = code;
-        select.appendChild(opt);
+        select.appendChild(new Option(code, code));
       }
     }
 
@@ -257,37 +428,17 @@
         }).then(r => r.json());
 
         if (res.success) {
-          cachedLocations = res;
-          populateLocationDropdowns(res.provinces, res.municipalities);
+          const provSel = document.getElementById("target-province-select");
+          const muniSel = document.getElementById("target-municipality-select");
+          provSel.innerHTML = '<option value="">-- Select Province --</option>' + res.provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+          muniSel.innerHTML = '<option value="">-- Select Municipality --</option>' + res.municipalities.map(m => `<option value="${m}">${m}</option>`).join('');
         }
-      } catch (e) {
-        console.error("Failed to fetch locations:", e);
-      }
-    }
-
-    function populateLocationDropdowns(provinces, municipalities) {
-      const provSelect = document.getElementById("target-province-select");
-      const muniSelect = document.getElementById("target-municipality-select");
-
-      if (provinces && provinces.length > 0) {
-        provSelect.innerHTML = '<option value="">-- Select Registered Province --</option>' +
-          provinces.map(p => `<option value="${p}">${p}</option>`).join('');
-      } else {
-        provSelect.innerHTML = '<option value="">No provinces registered yet</option>';
-      }
-
-      if (municipalities && municipalities.length > 0) {
-        muniSelect.innerHTML = '<option value="">-- Select Registered Municipality / City --</option>' +
-          municipalities.map(m => `<option value="${m}">${m}</option>`).join('');
-      } else {
-        muniSelect.innerHTML = '<option value="">No municipalities registered yet</option>';
-      }
+      } catch (e) { console.error("Locations load failed:", e); }
     }
 
     function handleTargetChange() {
       const type = document.getElementById("target-type").value;
       const group = document.getElementById("target-value-group");
-      const label = document.getElementById("target-value-label");
 
       const branchSel = document.getElementById("target-branch-select");
       const provSel = document.getElementById("target-province-select");
@@ -303,20 +454,10 @@
         group.classList.add("hidden");
       } else {
         group.classList.remove("hidden");
-
-        if (type === "BRANCH") {
-          label.textContent = "Select Target Branch";
-          branchSel.classList.remove("hidden");
-        } else if (type === "PROVINCE") {
-          label.textContent = "Select Registered Target Province";
-          provSel.classList.remove("hidden");
-        } else if (type === "MUNICIPALITY") {
-          label.textContent = "Select Registered Target Municipality / City";
-          muniSel.classList.remove("hidden");
-        } else if (type === "MEMBER") {
-          label.textContent = "Enter 5-Digit Member ID";
-          memberInp.classList.remove("hidden");
-        }
+        if (type === "BRANCH") branchSel.classList.remove("hidden");
+        if (type === "PROVINCE") provSel.classList.remove("hidden");
+        if (type === "MUNICIPALITY") muniSel.classList.remove("hidden");
+        if (type === "MEMBER") memberInp.classList.remove("hidden");
       }
     }
 
@@ -329,85 +470,42 @@
       return "";
     }
 
-    function setBroadcastLoading(isLoading) {
-      const btn = document.getElementById("btn-broadcast");
-      if (isLoading) {
-        btn.disabled = true;
-        btn.innerHTML = `<div class="spinner"></div> <span>BROADCASTING TO MEMBERS...</span>`;
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = `<span>⚡ BROADCAST EMERGENCY ALERT NOW</span>`;
-      }
-    }
-
-    function showConfirmModal(title, body, onConfirm) {
-      document.getElementById("modal-title").textContent = title;
-      document.getElementById("modal-body").textContent = body;
-      document.getElementById("modal-confirm-btn").onclick = () => {
-        closeModal();
-        onConfirm();
-      };
-      document.getElementById("custom-modal").classList.add("active");
-    }
-
-    function closeModal() {
-      document.getElementById("custom-modal").classList.remove("active");
-    }
-
     async function dispatchEmergencyAlert() {
       const title = document.getElementById("alert-title").value;
       const message = document.getElementById("alert-message").value;
       const targetType = document.getElementById("target-type").value;
       const targetValue = getSelectedTargetValue();
 
-      if (!title || !message) {
-        alert("Please enter alert title and message!");
-        return;
+      if (!title || !message) { alert("Enter title and message!"); return; }
+
+      if (!confirm(`Broadcast alert: "${title}" to target "${targetType}" (${targetValue || 'ALL'})?`)) return;
+
+      setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "broadcastEmergencyAlert",
+            title: title,
+            message: message,
+            category: document.getElementById("alert-category").value,
+            priority: document.getElementById("alert-priority").value,
+            targetType: targetType,
+            targetValue: targetValue,
+            senderId: currentOfficer ? currentOfficer.officerId : "DRRMC-OFFICER"
+          })
+        }).then(r => r.json());
+
+        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
+
+        if (res.success) {
+          alert(`Alert Dispatched Successfully!\nTargeted: ${res.summary.totalTargeted}\nDelivered: ${res.summary.totalSent}`);
+        } else { alert("Dispatch Failed: " + res.error); }
+      } catch (e) {
+        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
+        alert("Network Error: " + e.message);
       }
-
-      if (targetType !== "ALL" && !targetValue) {
-        alert("Please select or enter the target value!");
-        return;
-      }
-
-      showConfirmModal(
-        "🚨 Confirm Broadcast Dispatch",
-        `Broadcast alert: "${title}" to target "${targetType}" (${targetValue || 'ALL'})?`,
-        async () => {
-          setBroadcastLoading(true);
-
-          try {
-            const res = await fetch(GAS_BACKEND_URL, {
-              method: "POST",
-              body: JSON.stringify({
-                action: "broadcastEmergencyAlert",
-                title: title,
-                message: message,
-                category: document.getElementById("alert-category").value,
-                priority: document.getElementById("alert-priority").value,
-                targetType: targetType,
-                targetValue: targetValue,
-                senderId: "DRRMC-OFFICER-01"
-              })
-            }).then(r => r.json());
-
-            setBroadcastLoading(false);
-
-            if (res.success) {
-              const sum = res.summary;
-              document.getElementById("sum-targeted").textContent = sum.totalTargeted;
-              document.getElementById("sum-sent").textContent = sum.totalSent;
-              document.getElementById("sum-failed").textContent = sum.totalFailed;
-              document.getElementById("summary-grid").classList.remove("hidden");
-            } else {
-              alert("Broadcast Failed: " + res.error);
-            }
-          } catch (e) {
-            setBroadcastLoading(false);
-            alert("Network Error: " + e.message);
-          }
-        }
-      );
     }
 
     async function loadSafetyLogs() {
@@ -420,22 +518,30 @@
 
         if (res.success && res.logs.length > 0) {
           tbody.innerHTML = res.logs.map(log => `
-            <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding:10px; font-weight:bold;">${log.memberId}</td>
-              <td style="padding:10px;">
-                <span style="padding:3px 8px; border-radius:4px; color:white; font-weight:bold; background:${log.type === 'SAFE' ? '#2e7d32' : '#b71c1c'}">
+            <tr>
+              <td style="font-weight:bold;">${log.memberId}</td>
+              <td>
+                <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
                   ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
                 </span>
               </td>
-              <td style="padding:10px;">
-                ${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2;">📍 Map</a>` : 'No GPS'}
-              </td>
-              <td style="padding:10px; font-size:0.75rem;">${new Date(log.time).toLocaleTimeString()}</td>
+              <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2;">📍 Map</a>` : 'No GPS'}</td>
+              <td style="font-size:0.75rem;">${new Date(log.time).toLocaleTimeString()}</td>
             </tr>
           `).join('');
         }
-      } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='4' style='padding:14px; text-align:center;'>Unable to load logs.</td></tr>";
+      } catch (e) { tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Unable to load logs.</td></tr>"; }
+    }
+
+    function setBtnLoading(btnId, isLoading, originalText) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (isLoading) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div> <span>Processing...</span>`;
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     }
   </script>
