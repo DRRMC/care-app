@@ -375,7 +375,7 @@
     function showModal(icon, title, body, btnText = "OK", onConfirm = null, showCancel = false) {
       document.getElementById("modal-icon").textContent = icon;
       document.getElementById("modal-title").textContent = title;
-      document.getElementById("modal-body").innerHTML = body;
+      document.getElementById("modal-body").innerHTML = body; // Correctly renders bold, linebreaks, & emojis
       
       const cancelBtn = document.getElementById("modal-cancel-btn");
       if (showCancel) {
@@ -385,7 +385,7 @@
       }
 
       const btn = document.getElementById("modal-action-btn");
-      btn.textContent = btnText;
+      btn.textContent = (typeof btnText === 'string') ? btnText : "OK";
       btn.onclick = () => {
         closeModal();
         if (onConfirm) onConfirm();
@@ -413,7 +413,7 @@
     }
 
     // LOCK-IN CONFIRMATION POPUP BEFORE REGISTRATION
-     function promptLoginConfirmation() {
+    function promptLoginConfirmation() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
 
@@ -432,18 +432,6 @@
         "Yes, Proceed",                               // 4. Button Text
         () => handleMemberLogin(formattedId),          // 5. On Confirm Action
         true                                          // 6. Show Cancel Button
-      );
-    }
-
-      document.getElementById("input-member-id").value = formattedId;
-
-      showModal(
-        "🔒 Confirm Device Link",
-        `Are you sure Member ID <strong>${formattedId}</strong> belongs to you?<br><br>` +
-        `⚠️ <em>Important: Once proceeded, this gadget will be bound to Member ID #${formattedId} for disaster communications.</em>`,
-        "Yes, Proceed",
-        () => handleMemberLogin(formattedId),
-        true
       );
     }
 
