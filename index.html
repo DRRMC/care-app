@@ -413,7 +413,7 @@
     }
 
     // LOCK-IN CONFIRMATION POPUP BEFORE REGISTRATION
-    function promptLoginConfirmation() {
+     function promptLoginConfirmation() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
 
@@ -421,6 +421,19 @@
         showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Cooperative Member ID.");
         return;
       }
+
+      document.getElementById("input-member-id").value = formattedId;
+
+      showModal(
+        "🔒",                                          // 1. Icon
+        "Confirm Device Link",                        // 2. Title
+        `Are you sure Member ID <strong>${formattedId}</strong> belongs to you?<br><br>` +
+        `⚠️ <em>Important: Once proceeded, this gadget will be bound to Member ID #${formattedId} for disaster communications.</em>`, // 3. Body
+        "Yes, Proceed",                               // 4. Button Text
+        () => handleMemberLogin(formattedId),          // 5. On Confirm Action
+        true                                          // 6. Show Cancel Button
+      );
+    }
 
       document.getElementById("input-member-id").value = formattedId;
 
