@@ -341,6 +341,29 @@
       }
     });
 
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 🔒 DISABLE RIGHT-CLICK & F12 DEVTOOLS SHORTCUTS
+      document.addEventListener('contextmenu', (e) => e.preventDefault());
+      document.addEventListener('keydown', (e) => {
+        if (
+          e.key === 'F12' ||
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+          (e.ctrlKey && e.key === 'u')
+        ) {
+          e.preventDefault();
+        }
+      });
+
+      populateBranchDropdown();
+
+      // Auto login return users saved on this device
+      const savedMemberId = localStorage.getItem("care_member_id");
+      if (savedMemberId) {
+        document.getElementById("input-member-id").value = savedMemberId;
+        await autoLoginSavedUser(savedMemberId);
+      }
+    });
+
     function populateBranchDropdown() {
       const select = document.getElementById("field-branch");
       if (!select) return;
