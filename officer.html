@@ -419,11 +419,33 @@
             <span class="badge ${m.status === 'ACTIVE' ? 'badge-active' : 'badge-resigned'}">${m.status}</span>
           </td>
           <td>
+            <button class="action-btn" style="background:#f57c00;" onclick="resetMemberAccount('${m.memberId}')">🔄 Reset ID</button>
             <button class="action-btn btn-unlink" onclick="unlinkDevice('${m.memberId}')">Unlink Phone</button>
             ${m.status === 'ACTIVE' ? `<button class="action-btn btn-deactivate" onclick="deactivateMember('${m.memberId}')">Set Resigned</button>` : ''}
           </td>
         </tr>
       `).join('');
+    }
+
+    // NEW FUNCTION: RESET MEMBER ACCOUNT
+    async function resetMemberAccount(memberId) {
+      if (!confirm(`Are you sure you want to RESET Member ID #${memberId}?\n\nUse this if the user logged in with the WRONG ID. It will wipe this registration and kick their device back to the login screen.`)) return;
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "resetMemberAccount", memberId: memberId })
+        }).then(r => r.json());
+
+        if (res.success) {
+          alert("✅ " + res.message);
+          loadMembersList(); // Refresh table
+        } else {
+          alert("Error: " + res.error);
+        }
+      } catch (e) {
+        alert("Network Error: " + e.message);
+      }
     }
 
     function filterMembersTable() {
