@@ -259,11 +259,12 @@
               <th>Member ID</th>
               <th>Status</th>
               <th>GPS Location</th>
-              <th>Timestamp</th>
+              <th>Date & Time</th>
+              <th>Officer Action</th>
             </tr>
           </thead>
           <tbody id="safety-logs-body">
-            <tr><td colspan="4" style="text-align:center;">Loading safety logs...</td></tr>
+            <tr><td colspan="5" style="text-align:center;">Loading safety logs...</td></tr>
           </tbody>
         </table>
       </div>
@@ -569,20 +570,72 @@
         }).then(r => r.json());
 
         if (res.success && res.logs.length > 0) {
-          tbody.innerHTML = res.logs.map(log => `
-            <tr>
-              <td style="font-weight:bold;">${log.memberId}</td>
-              <td>
-                <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
-                  ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
-                </span>
-              </td>
-              <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2;">📍 Map</a>` : 'No GPS'}</td>
-              <td style="font-size:0.75rem;">${new Date(log.time).toLocaleTimeString()}</td>
-            </tr>
-          `).join('');
+          tbody.innerHTML = res.logs.map(log => {
+            const dateObj = new Date(log.time);
+            const formattedDateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const formattedTimeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const fullDateTime = `${formattedDateStr} - ${formattedTimeStr}`;
+
+            let actionButton = '';
+            if (log.resolution === 'PENDING' || !log.resolution) {
+              if (log.type === 'SAFE') {
+                actionButton = `<button class="action-btn" style="background:#2e7d32;" onclick="markStatusResolved('${log.statusId}', 'RESOLVED_OK')">Mark OK</button>`;
+              } else {
+                actionButton = `<button class="action-btn" style="background:#b71c1c;" onclick="markStatusResolved('${log.statusId}', 'RESCUED')">Mark Rescued 🚑</button>`;
+              }
+            } else {
+              if (log.resolution === 'RESOLVED_OK') {
+                actionButton = `<span style="color:#2e7d32; font-weight:bold; font-size:0.8rem;">✅ Reviewed (OK)</span>`;
+              } else {
+                actionButton = `<span style="color:#b71c1c; font-weight:bold; font-size:0.8rem;">🚑 Rescued</span>`;
+              }
+            }
+
+            return `
+              <tr>
+                <td style="font-weight:bold;">${log.memberId}</td>
+                <td>
+                  <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
+                    ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
+                  </span>
+                </td>
+                <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 Open Map</a>` : 'No GPS'}</td>
+                <td style="font-size:0.8rem; color:#444;">${fullDateTime}</td>
+                <td>${actionButton}</td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No safety logs recorded yet.</td></tr>";
         }
-      } catch (e) { tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Unable to load logs.</td></tr>"; }
+      } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Unable to load logs.</td></tr>";
+      }
+    }
+
+    // NEW FUNCTION: UPDATE STATUS IN GOOGLE SHEETS
+    async function markStatusResolved(statusId, resolutionType) {
+      const confirmMsg = resolutionType === 'RESOLVED_OK' ? "Mark this member status as Reviewed/OK?" : "Confirm that Emergency Assistance/Rescue has been dispatched?";
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "resolveEmergencyStatus",
+            statusId: statusId,
+            resolution: resolutionType
+          })
+        }).then(r => r.json());
+
+        if (res.success) {
+          loadSafetyLogs(); // Refresh table automatically
+        } else {
+          alert("Error: " + res.error);
+        }
+      } catch (e) {
+        alert("Network Error: " + e.message);
+      }
     }
 
     function setBtnLoading(btnId, isLoading, originalText) {
