@@ -485,17 +485,33 @@
     async function autoLoginSavedUser(formattedId) {
       try {
         const res = await sendToBackend({ action: "getOrRegisterMember", memberId: formattedId });
-        if (res.success) {
+        
+        // Check if login succeeded AND member status is active
+        if (res.success && res.member && res.member.status === "ACTIVE") {
           currentMember = res.member;
           populateDashboard(currentMember);
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-dashboard").classList.remove("hidden");
           
-          // Auto trigger notification registration on return visits
           await autoRequestNotificationPermission();
+        } else {
+          // 🚨 IF RESET OR DEACTIVATED: WIPE PHONE LOCAL STORAGE IMMEDIATELY
+          localStorage.removeItem("care_member_id");
+          currentMember = null;
+
+          // Force return to Login Screen
+          document.getElementById("view-dashboard").classList.add("hidden");
+          document.getElementById("view-login").classList.remove("hidden");
+          document.getElementById("input-member-id").value = "";
+          
+          showModal(
+            "🔄", 
+            "Account Reset Required", 
+            res.error || "Your Member ID was reset by Admin. Please re-enter your correct 5-Digit Member ID."
+          );
         }
       } catch (e) {
-        console.warn("Auto-login failed:", e);
+        console.warn("Auto-login verification failed:", e);
       }
     }
 
