@@ -330,17 +330,7 @@
     const messaging = firebase.messaging();
     let currentMember = null;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      populateBranchDropdown();
-
-      // Auto login return users saved on this device
-      const savedMemberId = localStorage.getItem("care_member_id");
-      if (savedMemberId) {
-        document.getElementById("input-member-id").value = savedMemberId;
-        await autoLoginSavedUser(savedMemberId);
-      }
-    });
-
+    // SINGLE MERGED DOMCONTENTLOADED EVENT LISTENER
     document.addEventListener("DOMContentLoaded", async () => {
       // 🔒 DISABLE RIGHT-CLICK & F12 DEVTOOLS SHORTCUTS
       document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -398,7 +388,7 @@
     function showModal(icon, title, body, btnText = "OK", onConfirm = null, showCancel = false) {
       document.getElementById("modal-icon").textContent = icon;
       document.getElementById("modal-title").textContent = title;
-      document.getElementById("modal-body").innerHTML = body; // Correctly renders bold, linebreaks, & emojis
+      document.getElementById("modal-body").innerHTML = body;
       
       const cancelBtn = document.getElementById("modal-cancel-btn");
       if (showCancel) {
