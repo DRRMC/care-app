@@ -39,7 +39,6 @@
       padding-bottom: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* NAV TABS */
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
     .tab-btn {
       flex: 1; padding: 12px; border: 1px solid var(--border); background: #e0e0e0;
@@ -70,7 +69,6 @@
 
     .hidden { display: none !important; }
 
-    /* TABLE STYLES */
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f0f4f8; font-weight: bold; }
@@ -82,19 +80,10 @@
     .action-btn { padding: 5px 10px; border-radius: 4px; border: none; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
     .btn-unlink { background: #ef6c00; }
     .btn-deactivate { background: #c62828; }
-
-    /* MODAL */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-      display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal-card { background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; text-align: center; }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
   <div class="header">
     <div>
       <h1>🚨 DRRMC COMMAND CENTER</h1>
@@ -105,7 +94,7 @@
 
   <div class="container">
 
-    <!-- VIEW 1: OFFICER LOGIN -->
+    <!-- LOGIN -->
     <div id="view-login" class="card" style="max-width: 420px; margin: 40px auto;">
       <h2>Officer Login</h2>
       <div class="form-group">
@@ -121,17 +110,17 @@
       </button>
     </div>
 
-    <!-- VIEW 2: COMMAND CENTER DASHBOARD -->
+    <!-- DASHBOARD -->
     <div id="view-dashboard" class="hidden">
 
-      <!-- NAVIGATION TABS -->
       <div class="nav-tabs">
         <div id="tab-broadcast" class="tab-btn active" onclick="switchTab('broadcast')">⚡ Broadcast Alert</div>
         <div id="tab-members" class="tab-btn" onclick="switchTab('members')">👥 Member Control</div>
+        <div id="tab-officers" class="tab-btn" onclick="switchTab('officers')">🔑 Add Officer</div>
         <div id="tab-safety" class="tab-btn" onclick="switchTab('safety')">💚 Safety Logs</div>
       </div>
 
-      <!-- TAB 1: EMERGENCY BROADCAST -->
+      <!-- TAB 1: BROADCAST -->
       <div id="sec-broadcast" class="card">
         <h2>Broadcast Emergency Alert</h2>
 
@@ -192,7 +181,7 @@
         </button>
       </div>
 
-      <!-- TAB 2: MEMBER & DEVICE GOVERNANCE -->
+      <!-- TAB 2: MEMBER CONTROL -->
       <div id="sec-members" class="card hidden">
         <h2>
           <span>Cooperative Member Registry</span>
@@ -219,7 +208,45 @@
         </table>
       </div>
 
-      <!-- TAB 3: LIVE SAFETY LOGS -->
+      <!-- TAB 3: REGISTER NEW OFFICER (AUTO-HASH) -->
+      <div id="sec-officers" class="card hidden">
+        <h2>Register New Command Officer</h2>
+        <p style="font-size: 0.85rem; color: #555; margin-bottom: 16px;">
+          Create new administrative access accounts. Password will be automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
+        </p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-officer-id">Officer ID*</label>
+            <input type="text" id="new-officer-id" placeholder="e.g. OFF-002">
+          </div>
+          <div class="form-group">
+            <label for="new-officer-member-id">Linked Member ID (5 Digits)*</label>
+            <input type="text" id="new-officer-member-id" placeholder="e.g. 00552">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-officer-role">Access Role*</label>
+            <select id="new-officer-role">
+              <option value="ADMIN">👑 ADMIN (Full Control)</option>
+              <option value="DISPATCHER">📢 DISPATCHER (Broadcast Only)</option>
+              <option value="OFFICER">👤 OFFICER (Standard View)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="new-officer-password">Account Password*</label>
+            <input type="password" id="new-officer-password" placeholder="Set secure password">
+          </div>
+        </div>
+
+        <button id="btn-register-officer" class="btn btn-success" onclick="handleRegisterOfficer()">
+          ➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS
+        </button>
+      </div>
+
+      <!-- TAB 4: SAFETY LOGS -->
       <div id="sec-safety" class="card hidden">
         <h2>
           <span>Live Safety Feed</span>
@@ -245,19 +272,6 @@
 
   </div>
 
-  <!-- MODAL DIALOG -->
-  <div id="custom-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div id="modal-icon" style="font-size:3rem; margin-bottom:10px;">🚨</div>
-      <div id="modal-title" style="font-size:1.2rem; font-weight:800; margin-bottom:8px;">Notice</div>
-      <div id="modal-body" style="font-size:0.9rem; color:#555; margin-bottom:20px;">Modal content...</div>
-      <div style="display:flex; gap:10px;">
-        <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; font-weight:bold;">Cancel</button>
-        <button id="modal-confirm-btn" style="flex:1; padding:12px; border-radius:8px; border:none; background:#b71c1c; color:#fff; font-weight:bold;">Confirm</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
@@ -276,10 +290,7 @@
       const id = document.getElementById("officer-id").value;
       const pass = document.getElementById("officer-password").value;
 
-      if (!id || !pass) {
-        alert("Enter Officer ID and Password!");
-        return;
-      }
+      if (!id || !pass) { alert("Enter Officer ID and Password!"); return; }
 
       setBtnLoading("btn-officer-login", true, "Login to Command Center");
 
@@ -324,13 +335,56 @@
       document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
       document.getElementById("sec-broadcast").classList.add("hidden");
       document.getElementById("sec-members").classList.add("hidden");
+      document.getElementById("sec-officers").classList.add("hidden");
       document.getElementById("sec-safety").classList.add("hidden");
 
       document.getElementById("tab-" + tabName).classList.add("active");
       document.getElementById("sec-" + tabName).classList.remove("hidden");
     }
 
-    /* MEMBER GOVERNANCE FUNCTIONS */
+    /* REGISTER NEW OFFICER WITH AUTO HASHING */
+    async function handleRegisterOfficer() {
+      const officerId = document.getElementById("new-officer-id").value.trim();
+      const memberId = document.getElementById("new-officer-member-id").value.trim();
+      const role = document.getElementById("new-officer-role").value;
+      const password = document.getElementById("new-officer-password").value.trim();
+
+      if (!officerId || !memberId || !password) {
+        alert("Please fill in Officer ID, Member ID, and Password!");
+        return;
+      }
+
+      setBtnLoading("btn-register-officer", true, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
+
+      try {
+        const res = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "registerOfficer",
+            officerId: officerId,
+            memberId: memberId,
+            role: role,
+            password: password
+          })
+        }).then(r => r.json());
+
+        setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
+
+        if (res.success) {
+          alert("✅ Success: " + res.message);
+          document.getElementById("new-officer-id").value = "";
+          document.getElementById("new-officer-member-id").value = "";
+          document.getElementById("new-officer-password").value = "";
+        } else {
+          alert("❌ Error: " + res.error);
+        }
+      } catch (e) {
+        setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
+        alert("Network Error: " + e.message);
+      }
+    }
+
+    /* MEMBER GOVERNANCE */
     async function loadMembersList() {
       const tbody = document.getElementById("members-table-body");
       try {
@@ -380,7 +434,7 @@
     }
 
     async function deactivateMember(memberId) {
-      if (!confirm(`Are you sure you want to set Member #${memberId} as RESIGNED? Their device access will be revoked.`)) return;
+      if (!confirm(`Are you sure you want to set Member #${memberId} as RESIGNED?`)) return;
 
       const res = await fetch(GAS_BACKEND_URL, {
         method: "POST",
@@ -390,13 +444,11 @@
       if (res.success) {
         alert(res.message);
         loadMembersList();
-      } else {
-        alert("Error: " + res.error);
       }
     }
 
     async function unlinkDevice(memberId) {
-      if (!confirm(`Unlink phone token for Member #${memberId}? They will need to re-register their device.`)) return;
+      if (!confirm(`Unlink phone token for Member #${memberId}?`)) return;
 
       const res = await fetch(GAS_BACKEND_URL, {
         method: "POST",
