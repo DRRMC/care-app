@@ -16,7 +16,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background Message Received:', payload);
 
-  const title = payload.notification ? payload.notification.title : '🚨 EMERGENCY ALERT';
+  const title = payload.notification ? payload.notification.title : '🚨 DRRMC EMERGENCY ALERT';
   const body = payload.notification ? payload.notification.body : 'Critical warning from DRRMC';
 
   const notificationOptions = {
@@ -34,17 +34,16 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const targetUrl = 'https://drrmc.github.io/drrmc-app/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
       for (let client of windowClients) {
-        if (client.url === targetUrl && 'focus' in client) {
+        if ('focus' in client) {
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow('./');
       }
     })
   );
