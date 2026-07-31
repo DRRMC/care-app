@@ -165,7 +165,9 @@
     #toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 
+  <!-- FIREBASE SDKs (APP, AUTH, MESSAGING) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 </head>
 <body>
@@ -178,14 +180,13 @@
 
   <div class="container">
 
-    <!-- VIEW 1: MEMBER LOGIN & EMAIL OTP -->
+    <!-- VIEW 1: MEMBER LOGIN & FIREBASE AUTH MAGIC LINK -->
     <div id="view-login" class="card">
       <h2>Member Portal Login</h2>
       
-      <!-- STEP 1: MEMBER ID & @asaphil.org EMAIL -->
-      <div id="otp-step-1">
+      <div id="login-form-box">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          Enter your 5-Digit Member ID and official <strong>@asaphil.org</strong> email address.
+          Enter your 5-Digit Member ID and official <strong>@asaphil.org</strong> email address to receive an instant Login Link.
         </p>
         <div class="form-group">
           <label for="input-member-id">Member ID (5 Digits)*</label>
@@ -200,27 +201,8 @@
           🔒 <strong>Data Privacy Notice:</strong> By submitting, you consent under RA 10173 (Data Privacy Act of 2012) to allow APECC DRRMC to process your location for emergency response.
         </div>
 
-        <button id="btn-request-otp" class="btn" onclick="requestEmailOTP()">
-          <span>Request Verification PIN</span>
-        </button>
-      </div>
-
-      <!-- STEP 2: OTP INPUT FORM -->
-      <div id="otp-step-2" class="hidden">
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
-          We sent a 6-digit PIN to <strong id="display-masked-email">***@asaphil.org</strong>.
-        </p>
-        <div class="form-group">
-          <label for="input-otp-pin">6-Digit Verification PIN*</label>
-          <input type="text" id="input-otp-pin" maxlength="6" placeholder="123456" style="font-size: 1.5rem; letter-spacing: 6px; text-align: center; font-weight: 800;">
-        </div>
-
-        <button id="btn-verify-otp" class="btn btn-success" onclick="verifyEmailOTP()">
-          <span>Verify & Unlock Portal</span>
-        </button>
-
-        <button class="btn" style="background: transparent; color: var(--text-muted); box-shadow: none; margin-top: 8px;" onclick="resetOTPStep()">
-          <span>← Back to Email Entry</span>
+        <button id="btn-request-magic-link" class="btn" onclick="sendFirebaseMagicLink()">
+          <span>📧 Send Login Verification Link</span>
         </button>
       </div>
 
@@ -368,11 +350,18 @@
     const VAPID_KEY = "BLcDdosDD6sfwNQnzhu5IR-MlaNP-IZlG5uaJbBuqx_JHTYLeN643eHILY4e2oMTk8OXIK5BFFkKeiLUtMopRgc";
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const messaging = firebase.messaging();
     let currentMember = null;
 
     document.addEventListener("DOMContentLoaded", async () => {
       populateBranchDropdown();
+
+      // Check if user clicked the Firebase Magic Link in their email
+      if (auth.isSignInWithEmailLink(window.location.href)) {
+        await handleFirebaseMagicLinkCompletion();
+        return;
+      }
 
       const savedMemberId = localStorage.getItem("care_member_id");
       if (savedMemberId) {
@@ -443,8 +432,8 @@
       return cleaned.substring(cleaned.length - 5);
     }
 
-    // 1. REQUEST EMAIL OTP (CLIENT VALIDATION FOR @asaphil.org)
-    async function requestEmailOTP() {
+    // 1. SEND UNLIMITED FIREBASE AUTH MAGIC LINK
+    async function sendFirebaseMagicLink() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
       const email = document.getElementById("input-member-email").value.trim().toLowerCase();
@@ -454,81 +443,80 @@
         return;
       }
 
-      // CLIENT-SIDE DOMAIN CHECK
       if (!email || !email.endsWith("@asaphil.org")) {
-        showModal(
-          "⚠️", 
-          "Invalid Email Domain", 
-          "Access Restricted: Only official email addresses ending in <strong>@asaphil.org</strong> are accepted."
-        );
+        showModal("⚠️", "Invalid Email", "Access Restricted: Only official <strong>@asaphil.org</strong> email addresses are allowed.");
         return;
       }
 
-      setBtnLoading("btn-request-otp", true, "Request Verification PIN");
+      setBtnLoading("btn-request-magic-link", true, "📧 Sending Login Link...");
+
+      const actionCodeSettings = {
+        url: window.location.href,
+        handleCodeInApp: true
+      };
 
       try {
-        const res = await sendToBackend({ action: "requestEmailOTP", memberId: formattedId, email: email });
-        setBtnLoading("btn-request-otp", false, "Request Verification PIN");
+        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', email);
+        window.localStorage.setItem('pendingMemberId', formattedId);
 
-        if (res.success) {
-          document.getElementById("display-masked-email").textContent = res.maskedEmail;
-          document.getElementById("otp-step-1").classList.add("hidden");
-          document.getElementById("otp-step-2").classList.remove("hidden");
-          showToast("PIN sent to your @asaphil.org inbox!");
-        } else {
-          showModal("❌", "Request Failed", res.error);
-        }
-      } catch (e) {
-        setBtnLoading("btn-request-otp", false, "Request Verification PIN");
-        showModal("⚠️", "Network Error", e.message);
+        setBtnLoading("btn-request-magic-link", false, "📧 Send Login Verification Link");
+        showModal("📧", "Login Link Sent!", `We sent an instant sign-in link to <strong>${email}</strong>.<br><br>Please open your email and tap the link to unlock your portal.`);
+      } catch (err) {
+        setBtnLoading("btn-request-magic-link", false, "📧 Send Login Verification Link");
+        showModal("❌", "Firebase Auth Error", err.message);
       }
     }
 
-    // 2. VERIFY EMAIL OTP
-    async function verifyEmailOTP() {
-      const formattedId = formatToFiveDigits(document.getElementById("input-member-id").value);
-      const email = document.getElementById("input-member-email").value.trim().toLowerCase();
-      const otp = document.getElementById("input-otp-pin").value.trim();
+    // 2. HANDLE MAGIC LINK RETURN FROM EMAIL
+    async function handleFirebaseMagicLinkCompletion() {
+      showModal("🔄", "Verifying Magic Link", "Unlocking your APECC DRRMC account...");
 
-      if (!otp || otp.length !== 6) {
-        showModal("⚠️", "Invalid PIN", "Please enter the 6-Digit PIN sent to your email.");
-        return;
+      let email = window.localStorage.getItem('emailForSignIn');
+      let memberId = window.localStorage.getItem('pendingMemberId') || "00000";
+
+      if (!email) {
+        email = window.prompt('Please confirm your @asaphil.org email for verification:');
       }
 
-      setBtnLoading("btn-verify-otp", true, "Verify & Unlock Portal");
-
       try {
-        const res = await sendToBackend({ action: "verifyEmailOTP", memberId: formattedId, email: email, otp: otp });
-        setBtnLoading("btn-verify-otp", false, "Verify & Unlock Portal");
+        const result = await auth.signInWithEmailLink(email, window.location.href);
+        window.localStorage.removeItem('emailForSignIn');
+        window.localStorage.removeItem('pendingMemberId');
+
+        // Link with Google Sheets Backend
+        const res = await sendToBackend({
+          action: "verifyFirebaseAuthMember",
+          memberId: memberId,
+          email: email,
+          firebaseUid: result.user.uid
+        });
+
+        closeModal();
 
         if (res.success) {
-          localStorage.setItem("care_member_id", formattedId);
+          localStorage.setItem("care_member_id", res.member.member_id);
           currentMember = res.member;
           populateDashboard(currentMember);
 
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-dashboard").classList.remove("hidden");
-          showToast("Welcome Member #" + formattedId);
+          showToast("Welcome Member #" + res.member.member_id);
 
           await autoRequestNotificationPermission();
           await loadLinkedDevices();
         } else {
-          showModal("❌", "Verification Error", res.error);
+          showModal("❌", "Backend Verification Error", res.error);
         }
-      } catch (e) {
-        setBtnLoading("btn-verify-otp", false, "Verify & Unlock Portal");
-        showModal("⚠️", "Network Error", e.message);
+      } catch (err) {
+        closeModal();
+        showModal("❌", "Verification Error", err.message);
       }
-    }
-
-    function resetOTPStep() {
-      document.getElementById("otp-step-2").classList.add("hidden");
-      document.getElementById("otp-step-1").classList.remove("hidden");
     }
 
     async function autoLoginSavedUser(formattedId) {
       try {
-        const res = await sendToBackend({ action: "verifyEmailOTP", memberId: formattedId, bypassOTP: true });
+        const res = await sendToBackend({ action: "verifyFirebaseAuthMember", memberId: formattedId, bypassLink: true });
         if (res.success && res.member && res.member.status === "ACTIVE") {
           currentMember = res.member;
           populateDashboard(currentMember);
