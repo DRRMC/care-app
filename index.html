@@ -275,6 +275,27 @@
         </button>
       </div>
 
+      <!-- PUSH NOTIFICATION CARD -->
+      <div class="card">
+        <h2>
+          <span>Alert Notifications</span>
+          <span id="badge-perm" class="badge pending">CHECKING</span>
+        </h2>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Enable alerts to receive typhoon, flood, and evacuation warnings.
+        </p>
+
+        <button id="btn-enable-push" class="btn" onclick="enablePushNotifications()">
+          🔔 Enable Emergency Alerts
+        </button>
+
+        <div style="margin-top: 14px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Registered Push Token:</label>
+          <div id="token-display" class="token-box">Checking registration...</div>
+        </div>
+      </div>
+
       <!-- DISASTER SAFETY CARD -->
       <div class="card" style="border: 2px solid var(--primary);">
         <h2>Disaster Safety Signal</h2>
@@ -298,26 +319,7 @@
         <div id="linked-devices-list">Loading devices...</div>
       </div>
 
-      <!-- PUSH NOTIFICATION CARD -->
-      <div class="card">
-        <h2>
-          <span>Alert Notifications</span>
-          <span id="badge-perm" class="badge pending">CHECKING</span>
-        </h2>
-
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          Enable alerts to receive typhoon, flood, and evacuation warnings.
-        </p>
-
-        <button id="btn-enable-push" class="btn" onclick="enablePushNotifications()">
-          🔔 Enable Emergency Alerts
-        </button>
-
-        <div style="margin-top: 14px;">
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Registered Push Token:</label>
-          <div id="token-display" class="token-box">Checking registration...</div>
-        </div>
-      </div>
+      
 
       <!-- DIAGNOSTICS CARD -->
       <div class="card">
@@ -397,6 +399,24 @@
         select.appendChild(opt);
       }
     }
+
+    async function autoRequestNotificationPermission() {
+        if (!('Notification' in window)) return;
+
+        const currentPerm = Notification.permission;
+
+        if (currentPerm === "default") {
+          try {
+            // Pops up the native browser prompt automatically: [Allow] / [Block]
+            const newPerm = await Notification.requestPermission();
+            await checkAndRegisterFCM();
+          } catch (e) {
+            console.warn("Notification prompt interrupted:", e);
+          }
+        } else {
+          await checkAndRegisterFCM();
+        }
+      }
 
     function setBtnLoading(btnId, isLoading, originalText) {
       const btn = document.getElementById(btnId);
@@ -600,12 +620,7 @@
       }
     }
 
-    async function autoRequestNotificationPermission() {
-      if (!('Notification' in window)) return;
-      if (Notification.permission === "default") {
-        try { await Notification.requestPermission(); await checkAndRegisterFCM(); } catch (e) {}
-      } else { await checkAndRegisterFCM(); }
-    }
+    
 
     function populateDashboard(member) {
       document.getElementById("badge-member-id").textContent = "ID: " + member.member_id;
