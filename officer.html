@@ -363,6 +363,28 @@
       transition: all 0.3s ease; z-index: 10000; display: flex; align-items: center; gap: 8px;
     }
     #toast.show { transform: translateY(0); opacity: 1; }
+
+    /* BROADCAST PROGRESS BAR */
+    .progress-card {
+      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 16px; margin: 20px 0;
+    }
+    .progress-bar-bg {
+      width: 100%; height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 10px 0;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%; background: linear-gradient(90deg, #1976d2, #2e7d32);
+      transition: width 0.3s ease;
+    }
+    .progress-stats-row {
+      display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text);
+    }
+    .progress-status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 800; margin-top: 6px;
+    }
+    .status-running { background: #e3f2fd; color: #1976d2; }
+    .status-paused { background: #fff3e0; color: #ef6c00; }
+    .status-completed { background: #e8f5e9; color: #2e7d32; }
   </style>
 </head>
 <body>
@@ -382,7 +404,7 @@
 
   <div class="container">
 
-    <!-- LOGIN -->
+    <!-- LOGIN VIEW -->
     <div id="view-login" class="card" style="max-width: 420px; margin: 40px auto;">
       <h2>Officer Login</h2>
       <div class="form-group">
@@ -398,7 +420,7 @@
       </button>
     </div>
 
-    <!-- DASHBOARD -->
+    <!-- DASHBOARD VIEW -->
     <div id="view-dashboard" class="hidden">
 
       <div class="nav-tabs">
@@ -488,6 +510,28 @@
           <select id="target-province-select" class="hidden"></select>
           <select id="target-municipality-select" class="hidden"></select>
           <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 18243" maxlength="5">
+        </div>
+
+        <!-- LIVE BROADCAST PROGRESS & AUTO-RESUME CARD -->
+        <div id="broadcast-progress-box" class="progress-card hidden">
+          <div class="progress-stats-row">
+            <span id="progress-text-counter">0 / 0 Members Sent</span>
+            <span id="progress-text-percent">0%</span>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+          </div>
+
+          <div class="progress-stats-row" style="color: var(--text-muted); font-size: 0.78rem;">
+            <span id="progress-text-eta">⏱️ Calculating remaining time...</span>
+            <span id="progress-status-badge" class="progress-status-badge status-running">🟢 Broadcasting...</span>
+          </div>
+
+          <div id="broadcast-control-btns" class="form-row" style="margin-top: 12px;">
+            <button id="btn-pause-broadcast" class="btn btn-secondary" style="padding: 8px;" onclick="pauseBroadcast()">⏸️ Pause</button>
+            <button id="btn-resume-broadcast" class="btn btn-success hidden" style="padding: 8px;" onclick="resumeBroadcast()">▶️ Resume</button>
+          </div>
         </div>
 
         <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
@@ -614,6 +658,17 @@
 
     let currentOfficer = null;
     let cachedMembers = [];
+
+    // RESUMABLE BATCH BROADCAST STATE
+    let broadcastState = {
+      isBroadcasting: false,
+      isPaused: false,
+      totalMembers: 0,
+      sentCount: 0,
+      batchSize: 500,
+      startTime: 0,
+      payload: null
+    };
 
     document.addEventListener("DOMContentLoaded", function() {
       const savedOfficer = localStorage.getItem("apecc_officer_session");
@@ -985,7 +1040,7 @@
       }
     }
 
-    /* BROADCASTING FUNCTIONS */
+    /* BROADCASTING FUNCTIONS WITH RESUMABLE BATCH DISPATCH & PROGRESS BAR */
     function populateOfficerBranchDropdown() {
       const select = document.getElementById("target-branch-select");
       if (!select) return;
@@ -1060,50 +1115,128 @@
     }
 
     async function dispatchEmergencyAlert() {
-      const title = document.getElementById("alert-title").value;
-      const message = document.getElementById("alert-message").value;
+      const title = document.getElementById("alert-title").value.trim();
+      const message = document.getElementById("alert-message").value.trim();
       const targetType = document.getElementById("target-type").value;
       const targetValue = getSelectedTargetValue();
 
       if (!title || !message) {
-        await showModal("⚠️", "Input Required", "Enter title and message!");
+        await showModal("⚠️", "Input Required", "Please enter title and message!");
         return;
       }
 
-      const confirmed = await showConfirm("⚡", "Confirm Broadcast", `Broadcast alert: "${title}" to target "${targetType}"?`);
+      const confirmed = await showConfirm("⚡", "Confirm Emergency Broadcast", `Broadcast alert:\n"${title}" to "${targetType}"?`);
       if (!confirmed) return;
 
-      setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
+      // Initialize Resumable Broadcast State
+      broadcastState.payload = {
+        title: title,
+        message: message,
+        category: document.getElementById("alert-category").value,
+        priority: document.getElementById("alert-priority").value,
+        targetType: targetType,
+        targetValue: targetValue,
+        senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
+      };
 
-      try {
-        const response = await fetch(GAS_BACKEND_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "broadcastEmergencyAlert",
-            title: title,
-            message: message,
-            category: document.getElementById("alert-category").value,
-            priority: document.getElementById("alert-priority").value,
-            targetType: targetType,
-            targetValue: targetValue,
-            senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
-          })
-        });
-        const res = await response.json();
+      broadcastState.isBroadcasting = true;
+      broadcastState.isPaused = false;
+      broadcastState.sentCount = 0;
+      broadcastState.totalMembers = targetType === "MEMBER" ? 1 : 20000;
+      broadcastState.startTime = Date.now();
 
-        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
+      // Show UI Progress Box
+      document.getElementById("broadcast-progress-box").classList.remove("hidden");
+      document.getElementById("btn-broadcast").disabled = true;
+      document.getElementById("btn-resume-broadcast").classList.add("hidden");
+      document.getElementById("btn-pause-broadcast").classList.remove("hidden");
 
-        if (res.success) {
-          await showModal("⚡", "Broadcast Dispatched!", `Emergency alert sent successfully!\n\n🎯 Targeted Recipient Topics: ${res.summary.totalTargeted}\n✅ Delivered Messages: ${res.summary.totalSent}`);
-          document.getElementById("alert-title").value = "";
-          document.getElementById("alert-message").value = "";
-        } else {
-          await showModal("❌", "Dispatch Failed", res.error);
+      runBroadcastLoop();
+    }
+
+    async function runBroadcastLoop() {
+      while (broadcastState.isBroadcasting && broadcastState.sentCount < broadcastState.totalMembers) {
+        if (broadcastState.isPaused) {
+          updateProgressUI("status-paused", "⏸️ Paused by Officer", "Dispatch paused.");
+          break;
         }
-      } catch (e) {
-        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
-        await showModal("⚠️", "Network Error", e.message);
+
+        // Check Network Connection & Auto-Resume
+        if (!navigator.onLine) {
+          updateProgressUI("status-paused", "🔴 Network Disconnected", "Retrying automatically when online...");
+          await new Promise(r => setTimeout(r, 4000));
+          continue;
+        }
+
+        const currentBatch = Math.min(broadcastState.batchSize, broadcastState.totalMembers - broadcastState.sentCount);
+
+        try {
+          const response = await fetch(GAS_BACKEND_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "broadcastEmergencyAlertBatch",
+              payload: broadcastState.payload,
+              offset: broadcastState.sentCount,
+              limit: currentBatch
+            })
+          });
+
+          const res = await response.json();
+
+          if (res.success) {
+            broadcastState.sentCount += (res.summary.totalSent || currentBatch);
+            updateProgressUI("status-running", "🟢 Broadcasting...", getETAText());
+          } else {
+            updateProgressUI("status-paused", "⚠️ Connection Busy", "Retrying batch in 3 seconds...");
+            await new Promise(r => setTimeout(r, 3000));
+          }
+        } catch (err) {
+          // Auto-Resume on disconnect
+          updateProgressUI("status-paused", "🔴 Interrupted - Auto Resuming", "Reconnecting to server...");
+          await new Promise(r => setTimeout(r, 4000));
+        }
       }
+
+      if (broadcastState.sentCount >= broadcastState.totalMembers) {
+        broadcastState.isBroadcasting = false;
+        updateProgressUI("status-completed", "✅ Broadcast Completed!", "All messages delivered.");
+        document.getElementById("btn-broadcast").disabled = false;
+        await showModal("⚡", "Broadcast Delivered", `Alert dispatched successfully to ${broadcastState.sentCount.toLocaleString()} members!`);
+      }
+    }
+
+    function pauseBroadcast() {
+      broadcastState.isPaused = true;
+      document.getElementById("btn-pause-broadcast").classList.add("hidden");
+      document.getElementById("btn-resume-broadcast").classList.remove("hidden");
+    }
+
+    function resumeBroadcast() {
+      broadcastState.isPaused = false;
+      document.getElementById("btn-resume-broadcast").classList.add("hidden");
+      document.getElementById("btn-pause-broadcast").classList.remove("hidden");
+      runBroadcastLoop();
+    }
+
+    function updateProgressUI(badgeClass, statusText, etaText) {
+      const percent = Math.min(100, Math.round((broadcastState.sentCount / broadcastState.totalMembers) * 100));
+      
+      document.getElementById("progress-bar-fill").style.width = percent + "%";
+      document.getElementById("progress-text-counter").textContent = `${broadcastState.sentCount.toLocaleString()} / ${broadcastState.totalMembers.toLocaleString()} Members Sent`;
+      document.getElementById("progress-text-percent").textContent = percent + "%";
+      document.getElementById("progress-text-eta").textContent = etaText;
+      
+      const badge = document.getElementById("progress-status-badge");
+      badge.className = `progress-status-badge ${badgeClass}`;
+      badge.textContent = statusText;
+    }
+
+    function getETAText() {
+      if (broadcastState.sentCount === 0) return "⏱️ Calculating remaining time...";
+      const elapsedSec = (Date.now() - broadcastState.startTime) / 1000;
+      const rate = broadcastState.sentCount / elapsedSec;
+      const remainingSec = Math.round((broadcastState.totalMembers - broadcastState.sentCount) / rate);
+      return `⏱️ Estimated time remaining: ${remainingSec} seconds`;
     }
 
     async function loadSafetyLogs() {
