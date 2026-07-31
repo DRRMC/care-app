@@ -328,6 +328,28 @@
       .action-group { flex-direction: column; align-items: stretch; }
       .action-btn { justify-content: center; width: 100%; }
     }
+
+
+    /* VISUAL BROADCAST PROGRESS CARD */
+.progress-card {
+  background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 16px; margin: 20px 0;
+}
+.progress-bar-bg {
+  width: 100%; height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 10px 0;
+}
+.progress-bar-fill {
+  height: 100%; width: 0%; background: linear-gradient(90deg, #1976d2, #2e7d32);
+  transition: width 0.4s ease;
+}
+.progress-stats-row {
+  display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text);
+}
+.progress-status-badge {
+  display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 800; margin-top: 6px;
+}
+.status-running { background: #e3f2fd; color: #1976d2; }
+.status-completed { background: #e8f5e9; color: #2e7d32; }
   </style>
 </head>
 <body>
@@ -454,6 +476,24 @@
           <select id="target-municipality-select" class="hidden"></select>
           <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
         </div>
+
+        <!-- VISUAL BROADCAST PROGRESS CARD -->
+        <div id="broadcast-progress-box" class="progress-card hidden">
+          <div class="progress-stats-row">
+            <span id="progress-text-counter">Connecting to FCM Gateway...</span>
+            <span id="progress-text-percent">0%</span>
+          </div>
+
+          <div class="progress-bar-bg">
+            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+          </div>
+
+          <div class="progress-stats-row" style="color: var(--text-muted); font-size: 0.78rem;">
+            <span id="progress-text-eta">⏱️ Dispatching emergency signals via FCM...</span>
+            <span id="progress-status-badge" class="progress-status-badge status-running">🟢 Broadcasting...</span>
+          </div>
+        </div>
+
 
         <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
           ⚡ BROADCAST EMERGENCY ALERT NOW
@@ -968,9 +1008,29 @@
         return;
       }
 
+      // Show Visual Progress Bar Animation
+      const progressBox = document.getElementById("broadcast-progress-box");
+      const progressFill = document.getElementById("progress-bar-fill");
+      const progressCounter = document.getElementById("progress-text-counter");
+      const progressPercent = document.getElementById("progress-text-percent");
+      const progressEta = document.getElementById("progress-text-eta");
+      const progressBadge = document.getElementById("progress-status-badge");
+
+      progressBox.classList.remove("hidden");
+      progressFill.style.width = "20%";
+      progressCounter.textContent = "Connecting to FCM Gateway...";
+      progressPercent.textContent = "20%";
+      progressEta.textContent = "⏱️ Dispatching emergency signals via FCM...";
+      progressBadge.className = "progress-status-badge status-running";
+      progressBadge.textContent = "🟢 Broadcasting...";
+
       setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
       try {
+        progressFill.style.width = "60%";
+        progressPercent.textContent = "60%";
+
+        // EXACT ORIGINAL WORKING API PAYLOAD - UNCHANGED!
         const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({
@@ -989,12 +1049,22 @@
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
         if (res.success) {
+          // Fill progress bar to 100% on success
+          progressFill.style.width = "100%";
+          progressPercent.textContent = "100%";
+          progressCounter.textContent = `${res.summary.totalSent.toLocaleString()} / ${res.summary.totalTargeted.toLocaleString()} Members Sent`;
+          progressEta.textContent = "All messages delivered successfully.";
+          progressBadge.className = "progress-status-badge status-completed";
+          progressBadge.textContent = "✅ Broadcast Completed!";
+
           alert('Alert Dispatched Successfully!\nTargeted: ' + res.summary.totalTargeted + '\nDelivered: ' + res.summary.totalSent);
         } else {
+          progressBox.classList.add("hidden");
           alert("Dispatch Failed: " + res.error);
         }
       } catch (e) {
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
+        progressBox.classList.add("hidden");
         alert("Network Error: " + e.message);
       }
     }
