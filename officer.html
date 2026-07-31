@@ -337,8 +337,8 @@
       <div class="header-title-box">
         <span style="font-size: 2rem;">🚨</span>
         <div>
-          <h1>DRRMC COMMAND CENTER</h1>
-          <p>APECC Emergency Broadcast & Governance Portal</p>
+          <h1>APECC DRRMC COMMAND CENTER</h1>
+          <p>Cooperative Emergency Broadcast & Governance Portal</p>
         </div>
       </div>
       <button id="btn-logout" class="action-btn btn-deactivate hidden" onclick="logoutOfficer()">Logout</button>
@@ -439,20 +439,20 @@
         <div class="form-group">
           <label for="target-type">Recipient Filter</label>
           <select id="target-type" onchange="handleTargetChange()">
-            <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
+            <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic Broadcast)</option>
             <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
             <option value="PROVINCE">📍 By Registered Province</option>
             <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
-            <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
+            <option value="MEMBER">👤 Single Member ID</option>
           </select>
         </div>
 
         <div id="target-value-group" class="form-group hidden">
-          <label id="target-value-label">Target Filter</label>
+          <label id="target-value-label">Target Filter Value</label>
           <select id="target-branch-select" class="hidden"></select>
           <select id="target-province-select" class="hidden"></select>
           <select id="target-municipality-select" class="hidden"></select>
-          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
+          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 100552">
         </div>
 
         <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
@@ -478,7 +478,7 @@
                 <th>Member ID</th>
                 <th>Full Name</th>
                 <th>Registered Email</th>
-                <th>CP Number / Location</th>
+                <th>CP Number (Masked)</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -494,7 +494,7 @@
       <div id="sec-officers" class="card hidden">
         <h2>Register New Command Officer</h2>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
-          Create new administrative access accounts. Password will be automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
+          Create new administrative access accounts. Passwords are automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
         </p>
 
         <div class="form-row">
@@ -503,8 +503,8 @@
             <input type="text" id="new-officer-id" placeholder="e.g. OFF-002">
           </div>
           <div class="form-group">
-            <label for="new-officer-member-id">Linked Member ID (5 Digits)*</label>
-            <input type="text" id="new-officer-member-id" placeholder="e.g. 00552">
+            <label for="new-officer-member-id">Linked Member ID*</label>
+            <input type="text" id="new-officer-member-id" placeholder="e.g. 100552">
           </div>
         </div>
 
@@ -559,13 +559,14 @@
   </div>
 
   <script>
+    // REPLACE WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     let currentOfficer = null;
     let cachedMembers = [];
 
     document.addEventListener("DOMContentLoaded", function() {
-      const savedOfficer = localStorage.getItem("care_officer_session");
+      const savedOfficer = localStorage.getItem("apecc_officer_session");
       if (savedOfficer) {
         currentOfficer = JSON.parse(savedOfficer);
         showDashboard();
@@ -598,7 +599,7 @@
 
         if (res.success) {
           currentOfficer = res.officer;
-          localStorage.setItem("care_officer_session", JSON.stringify(currentOfficer));
+          localStorage.setItem("apecc_officer_session", JSON.stringify(currentOfficer));
           showDashboard();
         } else {
           alert("Login Failed: " + res.error);
@@ -622,7 +623,7 @@
     }
 
     function logoutOfficer() {
-      localStorage.removeItem("care_officer_session");
+      localStorage.removeItem("apecc_officer_session");
       location.reload();
     }
 
@@ -692,7 +693,8 @@
           body: JSON.stringify({
             action: "approveMemberAccess",
             memberId: memberId,
-            decision: decision
+            decision: decision,
+            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
           })
         });
         const res = await response.json();
@@ -731,7 +733,8 @@
             officerId: officerId,
             memberId: memberId,
             role: role,
-            password: password
+            password: password,
+            creatorId: currentOfficer ? currentOfficer.officerId : 'ADMIN'
           })
         });
         const res = await response.json();
@@ -816,7 +819,11 @@
       try {
         const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
-          body: JSON.stringify({ action: "resetMemberAccount", memberId: memberId })
+          body: JSON.stringify({ 
+            action: "resetMemberAccount", 
+            memberId: memberId,
+            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
+          })
         });
         const res = await response.json();
 
@@ -981,7 +988,7 @@
             priority: document.getElementById("alert-priority").value,
             targetType: targetType,
             targetValue: targetValue,
-            senderId: currentOfficer ? currentOfficer.officerId : "DRRMC-OFFICER"
+            senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
           })
         });
         const res = await response.json();
@@ -1063,7 +1070,8 @@
           body: JSON.stringify({
             action: "resolveEmergencyStatus",
             statusId: statusId,
-            resolution: resolutionType
+            resolution: resolutionType,
+            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
           })
         });
         const res = await response.json();
