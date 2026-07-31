@@ -452,7 +452,7 @@
           <select id="target-branch-select" class="hidden"></select>
           <select id="target-province-select" class="hidden"></select>
           <select id="target-municipality-select" class="hidden"></select>
-          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 100552">
+          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 18243" maxlength="5">
         </div>
 
         <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
@@ -504,7 +504,7 @@
           </div>
           <div class="form-group">
             <label for="new-officer-member-id">Linked Member ID*</label>
-            <input type="text" id="new-officer-member-id" placeholder="e.g. 100552">
+            <input type="text" id="new-officer-member-id" placeholder="e.g. 18243" maxlength="5">
           </div>
         </div>
 
@@ -572,6 +572,14 @@
         showDashboard();
       }
     });
+
+    function formatToFiveDigits(val) {
+      if (!val) return "";
+      let cleaned = val.replace(/\D/g, '');
+      if (!cleaned) return "";
+      while (cleaned.length < 5) cleaned = "0" + cleaned;
+      return cleaned.substring(cleaned.length - 5);
+    }
 
     async function handleOfficerLogin() {
       const id = document.getElementById("officer-id").value.trim();
@@ -714,12 +722,11 @@
     /* REGISTER NEW OFFICER */
     async function handleRegisterOfficer() {
       const officerId = document.getElementById("new-officer-id").value.trim();
-      const memberId = document.getElementById("new-officer-member-id").value.trim();
-      const role = document.getElementById("new-officer-role").value;
-      const password = document.getElementById("new-officer-password").value.trim();
+      const rawMemberId = document.getElementById("new-officer-member-id").value.trim();
+      const memberId = formatToFiveDigits(rawMemberId);
 
-      if (!officerId || !memberId || !password) {
-        alert("Please fill in Officer ID, Member ID, and Password!");
+      if (!officerId || !memberId || memberId.length !== 5 || !password) {
+        alert("Please enter a valid Officer ID, 5-Digit Member ID, and Password!");
         return;
       }
 
@@ -956,7 +963,7 @@
       if (type === "BRANCH") return document.getElementById("target-branch-select").value;
       if (type === "PROVINCE") return document.getElementById("target-province-select").value;
       if (type === "MUNICIPALITY") return document.getElementById("target-municipality-select").value;
-      if (type === "MEMBER") return document.getElementById("target-member-input").value;
+      if (type === "MEMBER") return formatToFiveDigits(document.getElementById("target-member-input").value);
       return "";
     }
 
