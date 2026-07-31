@@ -303,7 +303,6 @@
       align-items: center;
     }
 
-    /* UTILITIES */
     .spinner {
       width: 18px; height: 18px; 
       border: 2px solid #ffffff; 
@@ -317,7 +316,6 @@
 
     .hidden { display: none !important; }
 
-    /* RESPONSIVE BREAKPOINTS */
     @media (max-width: 768px) {
       .header { flex-direction: column; text-align: center; gap: 12px; }
       .header-title-box { flex-direction: column; }
@@ -328,6 +326,43 @@
       .action-group { flex-direction: column; align-items: stretch; }
       .action-btn { justify-content: center; width: 100%; }
     }
+
+    /* MODERN COMMAND CENTER MODAL & TOAST */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-card {
+      background: #ffffff; border-radius: 16px; padding: 28px; text-align: center;
+      max-width: 420px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      transform: scale(0.9); transition: transform 0.25s ease; border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+
+    .modal-icon { font-size: 3rem; margin-bottom: 12px; }
+    .modal-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .modal-body { font-size: 0.92rem; color: #475569; margin-bottom: 24px; line-height: 1.5; white-space: pre-line; }
+
+    .modal-btn-group { display: flex; gap: 12px; justify-content: center; }
+    .modal-btn {
+      flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s;
+    }
+    .modal-btn:active { transform: scale(0.97); }
+    .modal-btn-primary { background: #b71c1c; color: white; box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3); }
+    .modal-btn-cancel { background: #e2e8f0; color: #475569; }
+
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white;
+      padding: 14px 24px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0;
+      transition: all 0.3s ease; z-index: 10000; display: flex; align-items: center; gap: 8px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
@@ -558,8 +593,23 @@
 
   </div>
 
+  <!-- CUSTOM MODAL DIALOG -->
+  <div id="custom-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modal-icon" class="modal-icon">🚨</div>
+      <div id="modal-title" class="modal-title">Command Center Notice</div>
+      <div id="modal-body" class="modal-body">Notification details...</div>
+      <div class="modal-btn-group">
+        <button id="modal-cancel-btn" class="modal-btn modal-btn-cancel hidden">Cancel</button>
+        <button id="modal-action-btn" class="modal-btn modal-btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast"><span>🔔 Notification message</span></div>
+
   <script>
-    // REPLACE WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     let currentOfficer = null;
@@ -572,6 +622,51 @@
         showDashboard();
       }
     });
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerHTML = `<span>${msg}</span>`;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    function showModal(icon, title, body) {
+      return new Promise((resolve) => {
+        document.getElementById("modal-icon").textContent = icon;
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").textContent = body;
+        document.getElementById("modal-cancel-btn").classList.add("hidden");
+        
+        const actionBtn = document.getElementById("modal-action-btn");
+        actionBtn.onclick = () => {
+          document.getElementById("custom-modal").classList.remove("active");
+          resolve(true);
+        };
+        document.getElementById("custom-modal").classList.add("active");
+      });
+    }
+
+    function showConfirm(icon, title, body) {
+      return new Promise((resolve) => {
+        document.getElementById("modal-icon").textContent = icon;
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-body").textContent = body;
+        
+        const cancelBtn = document.getElementById("modal-cancel-btn");
+        const actionBtn = document.getElementById("modal-action-btn");
+        cancelBtn.classList.remove("hidden");
+
+        cancelBtn.onclick = () => {
+          document.getElementById("custom-modal").classList.remove("active");
+          resolve(false);
+        };
+        actionBtn.onclick = () => {
+          document.getElementById("custom-modal").classList.remove("active");
+          resolve(true);
+        };
+        document.getElementById("custom-modal").classList.add("active");
+      });
+    }
 
     function formatToFiveDigits(val) {
       if (!val) return "";
@@ -586,7 +681,7 @@
       const pass = document.getElementById("officer-password").value.trim();
 
       if (!id || !pass) {
-        alert("Please enter Officer ID and Password!");
+        await showModal("⚠️", "Input Required", "Please enter Officer ID and Password!");
         return;
       }
 
@@ -610,11 +705,11 @@
           localStorage.setItem("apecc_officer_session", JSON.stringify(currentOfficer));
           showDashboard();
         } else {
-          alert("Login Failed: " + res.error);
+          await showModal("❌", "Login Failed", res.error);
         }
       } catch (e) {
         setBtnLoading("btn-officer-login", false, "Login to Command Center");
-        alert("Network Error: " + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
@@ -690,10 +785,8 @@
 
     /* APPROVE OR REJECT ACCESS REQUEST */
     async function approveAccess(memberId, decision) {
-      const actionText = decision === 'ACTIVE' ? 'APPROVE' : 'REJECT';
-      if (!confirm('Are you sure you want to ' + actionText + ' access for Member ID #' + memberId + '?')) {
-        return;
-      }
+      const confirmed = await showConfirm(decision === 'ACTIVE' ? "✅" : "❌", "Confirm Decision", `Are you sure you want to set Member #${memberId} to ${decision}?`);
+      if (!confirmed) return;
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
@@ -708,14 +801,14 @@
         const res = await response.json();
 
         if (res.success) {
-          alert('✅ ' + res.message);
+          showToast('✅ ' + res.message);
           loadPendingApprovals();
           loadMembersList();
         } else {
-          alert('Error: ' + res.error);
+          await showModal("❌", "Error", res.error);
         }
       } catch (e) {
-        alert('Network Error: ' + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
@@ -724,9 +817,11 @@
       const officerId = document.getElementById("new-officer-id").value.trim();
       const rawMemberId = document.getElementById("new-officer-member-id").value.trim();
       const memberId = formatToFiveDigits(rawMemberId);
+      const role = document.getElementById("new-officer-role").value;
+      const password = document.getElementById("new-officer-password").value.trim();
 
       if (!officerId || !memberId || memberId.length !== 5 || !password) {
-        alert("Please enter a valid Officer ID, 5-Digit Member ID, and Password!");
+        await showModal("⚠️", "Input Required", "Please enter a valid Officer ID, 5-Digit Member ID, and Password!");
         return;
       }
 
@@ -749,16 +844,16 @@
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
 
         if (res.success) {
-          alert("✅ Success: " + res.message);
+          await showModal("✅", "Success", res.message);
           document.getElementById("new-officer-id").value = "";
           document.getElementById("new-officer-member-id").value = "";
           document.getElementById("new-officer-password").value = "";
         } else {
-          alert("❌ Error: " + res.error);
+          await showModal("❌", "Error", res.error);
         }
       } catch (e) {
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
-        alert("Network Error: " + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
@@ -819,9 +914,8 @@
 
     /* RESET MEMBER ACCOUNT */
     async function resetMemberAccount(memberId) {
-      if (!confirm('Are you sure you want to RESET Member ID #' + memberId + '?\n\nIt will wipe this registration and kick their device back to the login screen.')) {
-        return;
-      }
+      const confirmed = await showConfirm("🔄", "Reset Member Account", `Reset Member #${memberId}?\n\nThis will wipe their registration and disconnect their device.`);
+      if (!confirmed) return;
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
@@ -835,13 +929,13 @@
         const res = await response.json();
 
         if (res.success) {
-          alert("✅ " + res.message);
+          showToast("✅ " + res.message);
           loadMembersList();
         } else {
-          alert("Error: " + res.error);
+          await showModal("❌", "Error", res.error);
         }
       } catch (e) {
-        alert("Network Error: " + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
@@ -860,9 +954,8 @@
     }
 
     async function deactivateMember(memberId) {
-      if (!confirm('Are you sure you want to set Member #' + memberId + ' as RESIGNED?')) {
-        return;
-      }
+      const confirmed = await showConfirm("⛔", "Deactivate Member", `Are you sure you want to set Member #${memberId} as RESIGNED?`);
+      if (!confirmed) return;
 
       const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
@@ -871,15 +964,14 @@
       const res = await response.json();
 
       if (res.success) {
-        alert(res.message);
+        showToast(res.message);
         loadMembersList();
       }
     }
 
     async function unlinkDevice(memberId) {
-      if (!confirm('Unlink phone token for Member #' + memberId + '?')) {
-        return;
-      }
+      const confirmed = await showConfirm("📱", "Unlink Device", `Unlink phone token for Member #${memberId}?`);
+      if (!confirmed) return;
 
       const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
@@ -888,7 +980,7 @@
       const res = await response.json();
 
       if (res.success) {
-        alert(res.message);
+        showToast(res.message);
         loadMembersList();
       }
     }
@@ -974,13 +1066,12 @@
       const targetValue = getSelectedTargetValue();
 
       if (!title || !message) {
-        alert("Enter title and message!");
+        await showModal("⚠️", "Input Required", "Enter title and message!");
         return;
       }
 
-      if (!confirm('Broadcast alert: "' + title + '" to target "' + targetType + '"?')) {
-        return;
-      }
+      const confirmed = await showConfirm("⚡", "Confirm Broadcast", `Broadcast alert: "${title}" to target "${targetType}"?`);
+      if (!confirmed) return;
 
       setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
@@ -1003,13 +1094,15 @@
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
         if (res.success) {
-          alert('Alert Dispatched Successfully!\nTargeted: ' + res.summary.totalTargeted + '\nDelivered: ' + res.summary.totalSent);
+          await showModal("⚡", "Broadcast Dispatched!", `Emergency alert sent successfully!\n\n🎯 Targeted Recipient Topics: ${res.summary.totalTargeted}\n✅ Delivered Messages: ${res.summary.totalSent}`);
+          document.getElementById("alert-title").value = "";
+          document.getElementById("alert-message").value = "";
         } else {
-          alert("Dispatch Failed: " + res.error);
+          await showModal("❌", "Dispatch Failed", res.error);
         }
       } catch (e) {
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
-        alert("Network Error: " + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
@@ -1069,7 +1162,8 @@
 
     async function markStatusResolved(statusId, resolutionType) {
       const confirmMsg = resolutionType === 'RESOLVED_OK' ? "Mark this member status as Reviewed/OK?" : "Confirm that Emergency Assistance/Rescue has been dispatched?";
-      if (!confirm(confirmMsg)) return;
+      const confirmed = await showConfirm(resolutionType === 'RESOLVED_OK' ? "💚" : "🚨", "Resolve Safety Signal", confirmMsg);
+      if (!confirmed) return;
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
@@ -1084,12 +1178,13 @@
         const res = await response.json();
 
         if (res.success) {
+          showToast("✅ Status Updated");
           loadSafetyLogs();
         } else {
-          alert("Error: " + res.error);
+          await showModal("❌", "Error", res.error);
         }
       } catch (e) {
-        alert("Network Error: " + e.message);
+        await showModal("⚠️", "Network Error", e.message);
       }
     }
 
