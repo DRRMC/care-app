@@ -1187,8 +1187,9 @@
             broadcastState.sentCount += (res.summary.totalSent || currentBatch);
             updateProgressUI("status-running", "🟢 Broadcasting...", getETAText());
           } else {
-            updateProgressUI("status-paused", "⚠️ Connection Busy", "Retrying batch in 3 seconds...");
-            await new Promise(r => setTimeout(r, 3000));
+            const actualError = res.error || "Server Busy";
+            updateProgressUI("status-paused", "⚠️ " + actualError, "Retrying in 4 seconds...");
+            await new Promise(r => setTimeout(r, 4000));
           }
         } catch (err) {
           // Auto-Resume on disconnect
