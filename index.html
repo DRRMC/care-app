@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#d32f2f">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>APECC DRRMC - Emergency Network</title>
@@ -127,6 +125,16 @@
       margin-top: 10px;
       line-height: 1.5;
     }
+    .device-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.85rem;
+    }
+    .device-list-item:last-child { border-bottom: none; }
+
     .hidden { display: none !important; }
 
     .modal-overlay {
@@ -170,24 +178,52 @@
 
   <div class="container">
 
-    <!-- VIEW 1: MEMBER LOGIN -->
+    <!-- VIEW 1: MEMBER LOGIN & EMAIL OTP -->
     <div id="view-login" class="card">
       <h2>Member Portal Login</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-        Enter your 5-Digit Cooperative Member ID to access emergency services.
-      </p>
-      <div class="form-group">
-        <label for="input-member-id">Member ID (5 Digits)*</label>
-        <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.3rem; letter-spacing: 3px; text-align: center; font-weight: 800;">
-      </div>
       
-      <div style="font-size: 0.75rem; color: #666; margin-bottom: 14px; text-align: justify; line-height: 1.3;">
-        🔒 <strong>Data Privacy Notice:</strong> By logging in, you consent under Republic Act 10173 (Data Privacy Act of 2012) to allow APECC DRRMC to securely process your member location and status for emergency broadcast and rescue operations.
+      <!-- STEP 1: MEMBER ID & EMAIL -->
+      <div id="otp-step-1">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          Enter your 5-Digit Member ID and registered email to receive a 6-Digit Verification PIN.
+        </p>
+        <div class="form-group">
+          <label for="input-member-id">Member ID (5 Digits)*</label>
+          <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: 800;">
+        </div>
+        <div class="form-group">
+          <label for="input-member-email">Email Address*</label>
+          <input type="email" id="input-member-email" placeholder="e.g. member@gmail.com">
+        </div>
+        
+        <div style="font-size: 0.75rem; color: #666; margin-bottom: 14px; text-align: justify; line-height: 1.3;">
+          🔒 <strong>Data Privacy Notice:</strong> By submitting, you consent under RA 10173 (Data Privacy Act of 2012) to allow APECC DRRMC to process your location for emergency response.
+        </div>
+
+        <button id="btn-request-otp" class="btn" onclick="requestEmailOTP()">
+          <span>Request Verification PIN</span>
+        </button>
       </div>
 
-      <button id="btn-login" class="btn" onclick="promptLoginConfirmation()">
-        <span>Access Emergency Portal</span>
-      </button>
+      <!-- STEP 2: OTP INPUT FORM -->
+      <div id="otp-step-2" class="hidden">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+          We sent a 6-digit PIN to <strong id="display-masked-email">***@***.com</strong>.
+        </p>
+        <div class="form-group">
+          <label for="input-otp-pin">6-Digit Verification PIN*</label>
+          <input type="text" id="input-otp-pin" maxlength="6" placeholder="123456" style="font-size: 1.5rem; letter-spacing: 6px; text-align: center; font-weight: 800;">
+        </div>
+
+        <button id="btn-verify-otp" class="btn btn-success" onclick="verifyEmailOTP()">
+          <span>Verify & Unlock Portal</span>
+        </button>
+
+        <button class="btn" style="background: transparent; color: var(--text-muted); box-shadow: none; margin-top: 8px;" onclick="resetOTPStep()">
+          <span>← Back to Email Entry</span>
+        </button>
+      </div>
+
     </div>
 
     <!-- VIEW 2: MEMBER DASHBOARD -->
@@ -239,7 +275,7 @@
         </button>
       </div>
 
-      <!-- EMERGENCY RESPONSE CARD -->
+      <!-- DISASTER SAFETY CARD -->
       <div class="card" style="border: 2px solid var(--primary);">
         <h2>Disaster Safety Signal</h2>
         <p style="font-size: 0.85rem; color: #555; margin-bottom: 14px;">
@@ -256,6 +292,12 @@
         </div>
       </div>
 
+      <!-- LINKED DEVICES CARD -->
+      <div class="card">
+        <h2>📱 My Linked Devices</h2>
+        <div id="linked-devices-list">Loading devices...</div>
+      </div>
+
       <!-- PUSH NOTIFICATION CARD -->
       <div class="card">
         <h2>
@@ -264,7 +306,7 @@
         </h2>
 
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          Enable alerts to receive immediate typhoon, flood, and evacuation warnings.
+          Enable alerts to receive typhoon, flood, and evacuation warnings.
         </p>
 
         <button id="btn-enable-push" class="btn" onclick="enablePushNotifications()">
@@ -277,7 +319,7 @@
         </div>
       </div>
 
-      <!-- SYSTEM DIAGNOSTICS CARD -->
+      <!-- DIAGNOSTICS CARD -->
       <div class="card">
         <h2>System Diagnostics</h2>
         <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()">
@@ -285,11 +327,10 @@
         </button>
 
         <div class="device-info-box">
-          <strong>📱 Linked Device Details:</strong><br>
+          <strong>📱 Device Binding Info:</strong><br>
           • <strong>Member ID:</strong> <span id="diag-member-id">--</span><br>
           • <strong>Device Type:</strong> <span id="diag-device-type">--</span><br>
-          • <strong>Browser:</strong> <span id="diag-browser">--</span><br>
-          • <strong>Binding Status:</strong> <span style="color: #2e7d32; font-weight: bold;">🔒 Locked to this Device</span>
+          • <strong>Browser:</strong> <span id="diag-browser">--</span>
         </div>
       </div>
 
@@ -330,26 +371,11 @@
     const messaging = firebase.messaging();
     let currentMember = null;
 
-    // SINGLE MERGED DOMCONTENTLOADED EVENT LISTENER
     document.addEventListener("DOMContentLoaded", async () => {
-      // 🔒 DISABLE RIGHT-CLICK & F12 DEVTOOLS SHORTCUTS
-      document.addEventListener('contextmenu', (e) => e.preventDefault());
-      document.addEventListener('keydown', (e) => {
-        if (
-          e.key === 'F12' ||
-          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-          (e.ctrlKey && e.key === 'u')
-        ) {
-          e.preventDefault();
-        }
-      });
-
       populateBranchDropdown();
 
-      // Auto login return users saved on this device
       const savedMemberId = localStorage.getItem("care_member_id");
       if (savedMemberId) {
-        document.getElementById("input-member-id").value = savedMemberId;
         await autoLoginSavedUser(savedMemberId);
       }
     });
@@ -357,12 +383,7 @@
     function populateBranchDropdown() {
       const select = document.getElementById("field-branch");
       if (!select) return;
-      select.innerHTML = '<option value="">-- Select Branch --</option>';
-
-      const centralOpt = document.createElement("option");
-      centralOpt.value = "Central Office";
-      centralOpt.textContent = "Central Office";
-      select.appendChild(centralOpt);
+      select.innerHTML = '<option value="">-- Select Branch --</option><option value="Central Office">Central Office</option>';
 
       for (let i = 1; i <= 1863; i++) {
         const code = "B" + String(i).padStart(4, '0');
@@ -391,11 +412,8 @@
       document.getElementById("modal-body").innerHTML = body;
       
       const cancelBtn = document.getElementById("modal-cancel-btn");
-      if (showCancel) {
-        cancelBtn.classList.remove("hidden");
-      } else {
-        cancelBtn.classList.add("hidden");
-      }
+      if (showCancel) cancelBtn.classList.remove("hidden");
+      else cancelBtn.classList.add("hidden");
 
       const btn = document.getElementById("modal-action-btn");
       btn.textContent = (typeof btnText === 'string') ? btnText : "OK";
@@ -425,113 +443,134 @@
       return cleaned.substring(cleaned.length - 5);
     }
 
-    // LOCK-IN CONFIRMATION POPUP BEFORE REGISTRATION
-    function promptLoginConfirmation() {
+    // 1. REQUEST EMAIL OTP
+    async function requestEmailOTP() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
+      const email = document.getElementById("input-member-email").value.trim();
 
       if (!formattedId || formattedId.length !== 5) {
-        showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Cooperative Member ID.");
+        showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Member ID.");
+        return;
+      }
+      if (!email || !email.includes("@")) {
+        showModal("⚠️", "Invalid Email", "Please enter a valid email address.");
         return;
       }
 
-      document.getElementById("input-member-id").value = formattedId;
-
-      showModal(
-        "🔒",                                          // 1. Icon
-        "Confirm Device Link",                        // 2. Title
-        `Are you sure Member ID <strong>${formattedId}</strong> belongs to you?<br><br>` +
-        `⚠️ <em>Important: Once proceeded, this gadget will be bound to Member ID #${formattedId} for disaster communications.</em>`, // 3. Body
-        "Yes, Proceed",                               // 4. Button Text
-        () => handleMemberLogin(formattedId),          // 5. On Confirm Action
-        true                                          // 6. Show Cancel Button
-      );
-    }
-
-    async function handleMemberLogin(formattedId) {
-      setBtnLoading("btn-login", true, "Access Emergency Portal");
+      setBtnLoading("btn-request-otp", true, "Request Verification PIN");
 
       try {
-        const res = await sendToBackend({ 
-          action: "getOrRegisterMember", 
-          memberId: formattedId,
-          deviceFingerprint: getDeviceSignature()
-        });
+        const res = await sendToBackend({ action: "requestEmailOTP", memberId: formattedId, email: email });
+        setBtnLoading("btn-request-otp", false, "Request Verification PIN");
 
-        setBtnLoading("btn-login", false, "Access Emergency Portal");
+        if (res.success) {
+          document.getElementById("display-masked-email").textContent = res.maskedEmail;
+          document.getElementById("otp-step-1").classList.add("hidden");
+          document.getElementById("otp-step-2").classList.remove("hidden");
+          showToast("PIN sent to your email!");
+        } else {
+          showModal("❌", "Request Failed", res.error);
+        }
+      } catch (e) {
+        setBtnLoading("btn-request-otp", false, "Request Verification PIN");
+        showModal("⚠️", "Network Error", e.message);
+      }
+    }
+
+    // 2. VERIFY EMAIL OTP
+    async function verifyEmailOTP() {
+      const formattedId = formatToFiveDigits(document.getElementById("input-member-id").value);
+      const email = document.getElementById("input-member-email").value.trim();
+      const otp = document.getElementById("input-otp-pin").value.trim();
+
+      if (!otp || otp.length !== 6) {
+        showModal("⚠️", "Invalid PIN", "Please enter the 6-Digit PIN sent to your email.");
+        return;
+      }
+
+      setBtnLoading("btn-verify-otp", true, "Verify & Unlock Portal");
+
+      try {
+        const res = await sendToBackend({ action: "verifyEmailOTP", memberId: formattedId, email: email, otp: otp });
+        setBtnLoading("btn-verify-otp", false, "Verify & Unlock Portal");
 
         if (res.success) {
           localStorage.setItem("care_member_id", formattedId);
           currentMember = res.member;
           populateDashboard(currentMember);
-          
+
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-dashboard").classList.remove("hidden");
-          
           showToast("Welcome Member #" + formattedId);
 
-          // 🚨 AUTOMATICALLY TRIGGER BROWSER PERMISSION PROMPT HERE!
           await autoRequestNotificationPermission();
-
+          await loadLinkedDevices();
         } else {
-          showModal("❌", "Registration Blocked", res.error || "This Member ID is already registered to another device.");
+          showModal("❌", "Verification Error", res.error);
         }
-      } catch (err) {
-        setBtnLoading("btn-login", false, "Access Emergency Portal");
-        showModal("⚠️", "Network Error", "Unable to connect to DRRMC Backend. Check internet connection.");
+      } catch (e) {
+        setBtnLoading("btn-verify-otp", false, "Verify & Unlock Portal");
+        showModal("⚠️", "Network Error", e.message);
       }
+    }
+
+    function resetOTPStep() {
+      document.getElementById("otp-step-2").classList.add("hidden");
+      document.getElementById("otp-step-1").classList.remove("hidden");
     }
 
     async function autoLoginSavedUser(formattedId) {
       try {
-        const res = await sendToBackend({ action: "getOrRegisterMember", memberId: formattedId });
-        
-        // Check if login succeeded AND member status is active
+        const res = await sendToBackend({ action: "verifyEmailOTP", memberId: formattedId, bypassOTP: true });
         if (res.success && res.member && res.member.status === "ACTIVE") {
           currentMember = res.member;
           populateDashboard(currentMember);
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-dashboard").classList.remove("hidden");
-          
           await autoRequestNotificationPermission();
+          await loadLinkedDevices();
         } else {
-          // 🚨 IF RESET OR DEACTIVATED: WIPE PHONE LOCAL STORAGE IMMEDIATELY
           localStorage.removeItem("care_member_id");
-          currentMember = null;
-
-          // Force return to Login Screen
-          document.getElementById("view-dashboard").classList.add("hidden");
-          document.getElementById("view-login").classList.remove("hidden");
-          document.getElementById("input-member-id").value = "";
-          
-          showModal(
-            "🔄", 
-            "Account Reset Required", 
-            res.error || "Your Member ID was reset by Admin. Please re-enter your correct 5-Digit Member ID."
-          );
         }
-      } catch (e) {
-        console.warn("Auto-login verification failed:", e);
+      } catch (e) { console.warn("Auto login failed:", e); }
+    }
+
+    async function loadLinkedDevices() {
+      if (!currentMember) return;
+      const listEl = document.getElementById("linked-devices-list");
+      try {
+        const res = await sendToBackend({ action: "getMemberDevices", memberId: currentMember.member_id });
+        if (res.success && res.devices.length > 0) {
+          listEl.innerHTML = res.devices.map(d => `
+            <div class="device-list-item">
+              <div>
+                <strong>${d.deviceType}</strong> (${d.browser})<br>
+                <small style="color:#777;">ID: ${d.deviceId}</small>
+              </div>
+              <button class="badge denied" style="border:none; cursor:pointer;" onclick="unlinkThisDevice('${d.deviceId}')">Unlink</button>
+            </div>
+          `).join('');
+        } else {
+          listEl.innerHTML = `<div style="font-size:0.85rem; color:#777;">No other active devices.</div>`;
+        }
+      } catch (e) { listEl.innerHTML = `<div style="font-size:0.85rem; color:#777;">Unable to load devices.</div>`; }
+    }
+
+    async function unlinkThisDevice(deviceId) {
+      if (!confirm("Unlink this device from your Member ID?")) return;
+      const res = await sendToBackend({ action: "unlinkDeviceById", deviceId: deviceId });
+      if (res.success) {
+        showToast("Device unlinked");
+        loadLinkedDevices();
       }
     }
 
-    // AUTOMATIC BROWSER PROMPT FOR NOTIFICATIONS
     async function autoRequestNotificationPermission() {
       if (!('Notification' in window)) return;
-      
-      const currentPerm = Notification.permission;
-
-      if (currentPerm === "default") {
-        try {
-          // Pops up the native browser prompt: [Allow] / [Block]
-          const newPerm = await Notification.requestPermission();
-          await checkAndRegisterFCM();
-        } catch (e) {
-          console.warn("Notification prompt interrupted:", e);
-        }
-      } else {
-        await checkAndRegisterFCM();
-      }
+      if (Notification.permission === "default") {
+        try { await Notification.requestPermission(); await checkAndRegisterFCM(); } catch (e) {}
+      } else { await checkAndRegisterFCM(); }
     }
 
     function populateDashboard(member) {
@@ -539,20 +578,17 @@
       document.getElementById("field-fullname").value = member.full_name === "New Member" ? "" : (member.full_name || "");
       document.getElementById("field-mobile").value = member.mobile_number || "";
       document.getElementById("field-branch").value = member.branch || "";
-      document.getElementById("field-province").value = member.province === "Default Province" ? "" : (member.province || "");
-      document.getElementById("field-municipality").value = member.municipality === "Default Municipality" ? "" : (member.municipality || "");
-      document.getElementById("field-barangay").value = member.barangay === "Default Barangay" ? "" : (member.barangay || "");
+      document.getElementById("field-province").value = member.province || "";
+      document.getElementById("field-municipality").value = member.municipality || "";
+      document.getElementById("field-barangay").value = member.barangay || "";
 
-      // Update Diagnostics Display
       document.getElementById("diag-member-id").textContent = member.member_id;
       document.getElementById("diag-device-type").textContent = detectDeviceType();
       document.getElementById("diag-browser").textContent = detectBrowser();
     }
 
-    // SAVE PROFILE WITH MANDATORY FORM VALIDATION
     async function saveProfileChanges() {
       if (!currentMember) return;
-
       const fullName = document.getElementById("field-fullname").value.trim();
       const mobile = document.getElementById("field-mobile").value.trim();
       const branch = document.getElementById("field-branch").value.trim();
@@ -560,84 +596,55 @@
       const municipality = document.getElementById("field-municipality").value.trim();
       const barangay = document.getElementById("field-barangay").value.trim();
 
-      // STRICT MANDATORY FIELD CHECK
       if (!fullName || !mobile || !branch || !province || !municipality || !barangay) {
-        showModal(
-          "⚠️", 
-          "Required Fields Missing", 
-          "All profile fields marked with (*) are <strong>required</strong>. Please complete all details before saving your location."
-        );
+        showModal("⚠️", "Required Fields Missing", "All profile fields marked with (*) are required.");
         return;
       }
 
       setBtnLoading("btn-save-profile", true, "Save & Update Location");
-
-      const payload = {
+      const res = await sendToBackend({
         action: "updateMemberProfile",
         memberId: currentMember.member_id,
         fullName: fullName,
+        email: currentMember.email || "",
         mobileNumber: mobile,
         branch: branch,
         province: province,
         municipality: municipality,
         barangay: barangay
-      };
+      });
+      setBtnLoading("btn-save-profile", false, "Save & Update Location");
 
-      try {
-        const res = await sendToBackend(payload);
-        setBtnLoading("btn-save-profile", false, "Save & Update Location");
-        if (res.success) {
-          showModal("✅", "Profile Saved", "Your demographic and disaster location profile have been updated.");
-        } else {
-          showModal("❌", "Save Error", res.error);
-        }
-      } catch (e) {
-        setBtnLoading("btn-save-profile", false, "Save & Update Location");
-        showModal("⚠️", "Network Error", e.message);
-      }
+      if (res.success) showModal("✅", "Profile Saved", "Your profile details have been updated.");
+      else showModal("❌", "Save Error", res.error);
     }
 
     async function sendSafetyStatus(type) {
       if (!currentMember) return;
       const btnId = type === 'SAFE' ? 'btn-status-safe' : 'btn-status-sos';
       const origText = type === 'SAFE' ? '💚 I\'M SAFE' : '🚨 SOS HELP';
-
       let lat = null, lng = null;
 
       if (type === 'SOS_HELP' && navigator.geolocation) {
         setBtnLoading(btnId, true, origText);
         try {
-          const pos = await new Promise((res, rej) => {
-            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 });
-          });
-          lat = pos.coords.latitude;
-          lng = pos.coords.longitude;
-        } catch (e) {
-          console.warn("GPS unavailable:", e.message);
-        }
-      } else {
-        setBtnLoading(btnId, true, origText);
-      }
+          const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
+          lat = pos.coords.latitude; lng = pos.coords.longitude;
+        } catch (e) {}
+      } else { setBtnLoading(btnId, true, origText); }
 
       const res = await sendToBackend({
         action: "sendEmergencyStatus",
         memberId: currentMember.member_id,
         statusType: type,
-        latitude: lat,
-        longitude: lng
+        latitude: lat, longitude: lng
       });
 
       setBtnLoading(btnId, false, origText);
-
       if (res.success) {
-        if (type === 'SAFE') {
-          showModal("💚", "Status Logged", "Your 'I'M SAFE' status is now registered with DRRMC Officers.");
-        } else {
-          showModal("🚨", "SOS DISPATCHED!", "Emergency rescuers have received your SOS request and GPS location.");
-        }
-      } else {
-        showModal("❌", "Dispatch Failed", res.error);
-      }
+        showModal(type === 'SAFE' ? "💚" : "🚨", type === 'SAFE' ? "Status Logged" : "SOS DISPATCHED!", 
+          type === 'SAFE' ? "Your 'I'M SAFE' status is registered." : "Emergency rescuers received your SOS and GPS.");
+      } else showModal("❌", "Dispatch Failed", res.error);
     }
 
     async function checkAndRegisterFCM() {
@@ -652,31 +659,20 @@
       } else if (perm === "denied") {
         badge.className = "badge denied";
         document.getElementById("btn-enable-push").classList.remove("hidden");
-        document.getElementById("token-display").textContent = "⚠️ Notifications blocked in browser settings. Please click the lock icon in your address bar to unblock.";
-      } else {
-        badge.className = "badge pending";
-        document.getElementById("btn-enable-push").classList.remove("hidden");
-        document.getElementById("token-display").textContent = "Action Required: Click 'Enable Emergency Alerts' above.";
+        document.getElementById("token-display").textContent = "⚠️ Notifications blocked in browser settings.";
       }
     }
 
     async function enablePushNotifications() {
-      try {
-        const perm = await Notification.requestPermission();
-        await checkAndRegisterFCM();
-      } catch (err) {
-        showModal("⚠️", "Permission Error", err.message);
-      }
+      try { await Notification.requestPermission(); await checkAndRegisterFCM(); } catch (err) {}
     }
 
     async function fetchAndSyncToken() {
       const tokenDisplay = document.getElementById("token-display");
       tokenDisplay.textContent = "Generating Push Token...";
-
       try {
         await navigator.serviceWorker.register('./firebase-messaging-sw.js');
         const swReg = await navigator.serviceWorker.ready;
-
         const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
 
         if (token) {
@@ -688,30 +684,19 @@
             deviceType: detectDeviceType(),
             browser: detectBrowser()
           });
-        } else {
-          tokenDisplay.textContent = "Failed to obtain push token.";
+          loadLinkedDevices();
         }
-      } catch (err) {
-        tokenDisplay.textContent = "FCM Registration Warning: " + err.message;
-      }
+      } catch (err) { tokenDisplay.textContent = "FCM Registration Warning: " + err.message; }
     }
 
     async function triggerTestAlert() {
       const token = document.getElementById("token-display").textContent;
-      if (!token || token.length < 20) {
-        showModal("⚠️", "No Token Available", "Please enable emergency alerts first.");
-        return;
-      }
-
+      if (!token || token.length < 20) { showModal("⚠️", "No Token", "Please enable emergency alerts first."); return; }
       setBtnLoading("btn-test-alert", true, "Test Emergency Notification");
       const res = await sendToBackend({ action: "sendTestAlert", token: token });
       setBtnLoading("btn-test-alert", false, "Test Emergency Notification");
-
-      if (res.success && res.response.success) {
-        showModal("🔔", "Test Dispatched", "Test alert successfully sent to your device!");
-      } else {
-        showModal("❌", "Dispatch Error", JSON.stringify(res));
-      }
+      if (res.success && res.response.success) showModal("🔔", "Test Dispatched", "Test alert successfully sent!");
+      else showModal("❌", "Dispatch Error", JSON.stringify(res));
     }
 
     async function sendToBackend(payload) {
@@ -722,10 +707,10 @@
     function detectDeviceType() {
       const ua = navigator.userAgent;
       if (/android/i.test(ua)) return "ANDROID";
-      if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "IOS";
+      if (/iPad|iPhone|iPod/.test(ua)) return "IOS";
       if (/Win/i.test(ua)) return "WINDOWS";
       if (/Mac/i.test(ua)) return "MAC";
-      return "MOBILE/DESKTOP";
+      return "DESKTOP";
     }
 
     function detectBrowser() {
@@ -735,10 +720,6 @@
       if (ua.includes("Firefox")) return "Firefox";
       if (ua.includes("Edg")) return "Edge";
       return "Browser";
-    }
-
-    function getDeviceSignature() {
-      return detectDeviceType() + "-" + detectBrowser();
     }
 
     messaging.onMessage((payload) => {
