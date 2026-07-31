@@ -322,6 +322,12 @@
       <!-- DIAGNOSTICS CARD -->
       <div class="card">
         <h2>System Diagnostics</h2>
+        
+        <!-- RESTORED DIAGNOSTIC TEST BUTTON -->
+        <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()" style="margin-bottom: 12px;">
+          ⚡ Test Emergency Notification
+        </button>
+
         <div class="device-info-box">
           <strong>📱 Device Binding Info:</strong><br>
           • <strong>Platform:</strong> APECC DRRMC Engine<br>
@@ -432,6 +438,35 @@
       toast.classList.add("show");
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
+
+    async function triggerTestAlert() {
+  const tokenDisplay = document.getElementById("token-display").textContent;
+  if (!tokenDisplay || tokenDisplay.length < 20 || tokenDisplay.includes("Checking")) {
+    showModal("⚠️", "Token Required", "Please click 'Enable Emergency Alerts' first to generate your FCM Push Token.");
+    return;
+  }
+
+  setBtnLoading("btn-test-alert", true, "Test Emergency Notification");
+
+  try {
+    const res = await sendToBackend({
+      action: "sendTestAlert",
+      token: tokenDisplay
+    });
+
+    setBtnLoading("btn-test-alert", false, "Test Emergency Notification");
+
+    if (res.success && res.response && res.response.success) {
+      showModal("🔔", "Test Alert Delivered!", "Push notification successfully dispatched to your device token via Google FCM v1!");
+    } else {
+      const errDetail = res.response ? JSON.stringify(res.response) : (res.error || "Unknown Error");
+      showModal("❌", "Delivery Error", "FCM Response:\n" + errDetail);
+    }
+  } catch (err) {
+    setBtnLoading("btn-test-alert", false, "Test Emergency Notification");
+    showModal("⚠️", "Network Error", err.message);
+  }
+}
 
     // STRICT 5-DIGIT FORMATTING & PADDING
     function formatToFiveDigits(val) {
