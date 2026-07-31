@@ -8,88 +8,340 @@
     :root {
       --primary: #b71c1c;
       --primary-dark: #7f0000;
+      --primary-light: #ef5350;
       --secondary: #1976d2;
+      --secondary-dark: #0d47a1;
       --success: #2e7d32;
-      --bg: #eef2f5;
+      --warning: #ef6c00;
+      --danger: #c62828;
+      --bg: #f4f6f9;
       --surface: #ffffff;
-      --text: #212121;
-      --border: #cfd8dc;
+      --surface-subtle: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius-sm: 6px;
       --radius: 12px;
-      --shadow: 0 4px 14px rgba(0,0,0,0.06);
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 40px;
+    }
+
+    /* HEADER */
+    .header-wrapper {
+      background: linear-gradient(135deg, #7f0000 0%, #b71c1c 100%);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
 
     .header {
-      background: linear-gradient(135deg, #7f0000, #b71c1c);
-      color: white; padding: 20px 16px; text-align: center; box-shadow: var(--shadow);
-      display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; border-radius: 0 0 12px 12px;
+      color: white; 
+      padding: 16px 24px; 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
     }
-    .header h1 { font-size: 1.5rem; font-weight: 800; }
-    .header p { font-size: 0.85rem; opacity: 0.9; }
 
-    .container { max-width: 900px; margin: 20px auto; padding: 0 16px; }
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 { 
+      font-size: 1.35rem; 
+      font-weight: 800; 
+      letter-spacing: -0.02em;
+    }
+
+    .header p { 
+      font-size: 0.8rem; 
+      opacity: 0.85; 
+      margin-top: 2px;
+    }
+
+    /* CONTAINER & CARDS */
+    .container { 
+      max-width: 1400px; 
+      width: 100%;
+      margin: 24px auto; 
+      padding: 0 20px; 
+      flex: 1;
+    }
 
     .card {
-      background: var(--surface); border-radius: var(--radius); padding: 24px;
-      margin-bottom: 20px; border: 1px solid var(--border); box-shadow: var(--shadow);
+      background: var(--surface); 
+      border-radius: var(--radius); 
+      padding: 24px;
+      margin-bottom: 24px; 
+      border: 1px solid var(--border); 
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s ease;
     }
+
     .card h2 {
-      font-size: 1.25rem; color: var(--primary-dark); border-bottom: 2px solid var(--border);
-      padding-bottom: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;
+      font-size: 1.2rem; 
+      font-weight: 700;
+      color: var(--text); 
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px; 
+      margin-bottom: 20px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    /* NAVIGATION TABS */
+    .nav-tabs { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 24px; 
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+    .nav-tabs::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
     .tab-btn {
-      flex: 1; padding: 12px; border: 1px solid var(--border); background: #e0e0e0;
-      border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s;
+      flex: 1; 
+      min-width: 150px;
+      padding: 14px 16px; 
+      border: 1px solid var(--border); 
+      background: var(--surface);
+      color: var(--text-muted);
+      border-radius: var(--radius); 
+      font-weight: 700; 
+      font-size: 0.9rem;
+      cursor: pointer; 
+      text-align: center; 
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
     }
-    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary-dark); }
 
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #444; margin-bottom: 6px; text-transform: uppercase; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none;
+    .tab-btn:hover {
+      background: var(--surface-subtle);
+      color: var(--text);
     }
-    .form-row { display: flex; gap: 12px; }
+
+    .tab-btn.active { 
+      background: var(--primary); 
+      color: white; 
+      border-color: var(--primary-dark); 
+      box-shadow: 0 4px 10px rgba(183, 28, 28, 0.25);
+    }
+
+    /* FORMS & INPUTS */
+    .form-group { margin-bottom: 18px; }
+    
+    .form-group label { 
+      display: block; 
+      font-size: 0.75rem; 
+      font-weight: 700; 
+      color: var(--text-muted); 
+      margin-bottom: 6px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; 
+      padding: 12px 14px; 
+      border: 1.5px solid var(--border); 
+      border-radius: var(--radius-sm); 
+      font-size: 0.95rem; 
+      color: var(--text);
+      background-color: #fff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+    }
+
+    .form-row { 
+      display: flex; 
+      gap: 16px; 
+    }
+
     .form-row .form-group { flex: 1; }
 
+    /* BUTTONS */
     .btn {
-      width: 100%; background: var(--primary); color: white; border: none; padding: 14px;
-      border-radius: 8px; font-size: 1rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
+      width: 100%; 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      padding: 14px 20px;
+      border-radius: var(--radius-sm); 
+      font-size: 0.95rem; 
+      font-weight: 800; 
+      cursor: pointer; 
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 6px rgba(183, 28, 28, 0.2);
     }
-    .btn-success { background: var(--success); }
-    .btn-secondary { background: var(--secondary); }
 
-    .spinner {
-      width: 20px; height: 20px; border: 3px solid #ffffff; border-top: 3px solid transparent;
-      border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;
+    .btn:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); box-shadow: 0 2px 6px rgba(46, 125, 50, 0.2); }
+    .btn-success:hover { background: #1b5e20; }
+    .btn-secondary { background: var(--secondary); box-shadow: 0 2px 6px rgba(25, 118, 210, 0.2); }
+    .btn-secondary:hover { background: var(--secondary-dark); }
+
+    .action-btn { 
+      padding: 6px 12px; 
+      border-radius: var(--radius-sm); 
+      border: none; 
+      color: white; 
+      font-weight: 600; 
+      cursor: pointer; 
+      font-size: 0.78rem; 
+      transition: opacity 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
+
+    .action-btn:hover { opacity: 0.9; }
+    .action-btn:active { transform: scale(0.97); }
+
+    .btn-unlink { background: var(--warning); }
+    .btn-deactivate { background: var(--danger); }
+
+    /* TABLES & DATA GRID */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      font-size: 0.88rem; 
+      text-align: left;
+      background: #fff;
+    }
+
+    th { 
+      background: var(--surface-subtle); 
+      font-weight: 700; 
+      color: var(--text-muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    td { 
+      padding: 14px 16px; 
+      border-bottom: 1px solid var(--border); 
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background-color: #f8fafc; }
+
+    /* BADGES */
+    .badge { 
+      padding: 4px 10px; 
+      border-radius: 20px; 
+      font-size: 0.72rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      display: inline-block;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-active { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .badge-resigned { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+    .badge-reset { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+
+    .action-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* UTILITIES */
+    .spinner {
+      width: 18px; height: 18px; 
+      border: 2px solid #ffffff; 
+      border-top: 2px solid transparent;
+      border-radius: 50%; 
+      animation: spin 0.8s linear infinite; 
+      display: inline-block;
+    }
+
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     .hidden { display: none !important; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
-    th { background: #f0f4f8; font-weight: bold; }
-
-    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: bold; text-transform: uppercase; }
-    .badge-active { background: #e8f5e9; color: #2e7d32; }
-    .badge-resigned { background: #ffebee; color: #c62828; }
-
-    .action-btn { padding: 5px 10px; border-radius: 4px; border: none; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
-    .btn-unlink { background: #ef6c00; }
-    .btn-deactivate { background: #c62828; }
+    /* RESPONSIVE BREAKPOINTS */
+    @media (max-width: 768px) {
+      .header { flex-direction: column; text-align: center; gap: 12px; }
+      .header-title-box { flex-direction: column; }
+      .form-row { flex-direction: column; gap: 0; }
+      .card { padding: 16px; }
+      .nav-tabs { gap: 6px; }
+      .tab-btn { padding: 10px 12px; font-size: 0.82rem; min-width: auto; }
+      .action-group { flex-direction: column; align-items: stretch; }
+      .action-btn { justify-content: center; width: 100%; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <div>
-      <h1>🚨 DRRMC COMMAND CENTER</h1>
-      <p>APECC Emergency Broadcast & Governance Portal</p>
+  <div class="header-wrapper">
+    <div class="header">
+      <div class="header-title-box">
+        <span style="font-size: 2rem;">🚨</span>
+        <div>
+          <h1>DRRMC COMMAND CENTER</h1>
+          <p>APECC Emergency Broadcast & Governance Portal</p>
+        </div>
+      </div>
+      <button id="btn-logout" class="action-btn btn-deactivate hidden" onclick="logoutOfficer()">Logout</button>
     </div>
-    <button id="btn-logout" class="action-btn btn-deactivate hidden" onclick="logoutOfficer()">Logout</button>
   </div>
 
   <div class="container">
@@ -131,7 +383,7 @@
 
         <div class="form-group">
           <label for="alert-message">Emergency Message Body</label>
-          <textarea id="alert-message" rows="3" placeholder="Type instructions for Cooperative Members..."></textarea>
+          <textarea id="alert-message" rows="4" placeholder="Type instructions for Cooperative Members..."></textarea>
         </div>
 
         <div class="form-row">
@@ -185,33 +437,35 @@
       <div id="sec-members" class="card hidden">
         <h2>
           <span>Cooperative Member Registry</span>
-          <button onclick="loadMembersList()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer;">🔄 Refresh</button>
+          <button onclick="loadMembersList()" class="action-btn" style="background:var(--secondary); font-size:0.85rem; padding: 8px 14px;">🔄 Refresh List</button>
         </h2>
 
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 20px;">
           <input type="text" id="search-member" placeholder="🔍 Search Member ID, Name, or Branch..." onkeyup="filterMembersTable()">
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Member ID</th>
-              <th>Full Name</th>
-              <th>Branch / Location</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="members-table-body">
-            <tr><td colspan="5" style="text-align:center;">Loading members...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Full Name</th>
+                <th>Branch / Location</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="members-table-body">
+              <tr><td colspan="5" style="text-align:center;">Loading members...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- TAB 3: REGISTER NEW OFFICER (AUTO-HASH) -->
       <div id="sec-officers" class="card hidden">
         <h2>Register New Command Officer</h2>
-        <p style="font-size: 0.85rem; color: #555; margin-bottom: 16px;">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
           Create new administrative access accounts. Password will be automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
         </p>
 
@@ -250,24 +504,26 @@
       <div id="sec-safety" class="card hidden">
         <h2>
           <span>Live Safety Feed</span>
-          <button onclick="loadSafetyLogs()" style="background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; cursor:pointer;">🔄 Refresh</button>
+          <button onclick="loadSafetyLogs()" class="action-btn" style="background:var(--secondary); font-size:0.85rem; padding: 8px 14px;">🔄 Refresh Logs</button>
         </h2>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Member ID & Name</th>
-              <th>Status</th>
-              <th>Registered Address</th>
-              <th>GPS Location</th>
-              <th>Date & Time</th>
-              <th>Officer Action</th>
-            </tr>
-          </thead>
-          <tbody id="safety-logs-body">
-            <tr><td colspan="6" style="text-align:center;">Loading safety logs...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Member ID & Name</th>
+                <th>Status</th>
+                <th>Registered Address</th>
+                <th>GPS Location</th>
+                <th>Date & Time</th>
+                <th>Officer Action</th>
+              </tr>
+            </thead>
+            <tbody id="safety-logs-body">
+              <tr><td colspan="6" style="text-align:center;">Loading safety logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -411,24 +667,31 @@
         return;
       }
 
-      tbody.innerHTML = members.map(m => `
+      tbody.innerHTML = members.map(m => {
+        let badgeClass = 'badge-active';
+        if (m.status === 'RESIGNED') badgeClass = 'badge-resigned';
+        if (m.status === 'RESET') badgeClass = 'badge-reset';
+
+        return `
         <tr>
-          <td style="font-weight:bold;">${m.memberId}</td>
-          <td>${m.fullName}</td>
-          <td>${m.branch || '--'} (${m.municipality || '--'})</td>
+          <td style="font-weight:bold; font-family: monospace; font-size: 0.95rem;">${m.memberId}</td>
+          <td style="font-weight: 600;">${m.fullName}</td>
+          <td>${m.branch || '--'} <span style="color:var(--text-muted); font-size: 0.8rem;">(${m.municipality || '--'})</span></td>
           <td>
-            <span class="badge ${m.status === 'ACTIVE' ? 'badge-active' : 'badge-resigned'}">${m.status}</span>
+            <span class="badge ${badgeClass}">${m.status}</span>
           </td>
           <td>
-            <button class="action-btn" style="background:#f57c00;" onclick="resetMemberAccount('${m.memberId}')">🔄 Reset ID</button>
-            <button class="action-btn btn-unlink" onclick="unlinkDevice('${m.memberId}')">Unlink Phone</button>
-            ${m.status === 'ACTIVE' ? `<button class="action-btn btn-deactivate" onclick="deactivateMember('${m.memberId}')">Set Resigned</button>` : ''}
+            <div class="action-group">
+              <button class="action-btn" style="background:#f57c00;" onclick="resetMemberAccount('${m.memberId}')">🔄 Reset ID</button>
+              <button class="action-btn btn-unlink" onclick="unlinkDevice('${m.memberId}')">📱 Unlink Phone</button>
+              ${m.status === 'ACTIVE' ? `<button class="action-btn btn-deactivate" onclick="deactivateMember('${m.memberId}')">⛔ Set Resigned</button>` : ''}
+            </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
-    // NEW FUNCTION: RESET MEMBER ACCOUNT
+    // RESET MEMBER ACCOUNT
     async function resetMemberAccount(memberId) {
       if (!confirm(`Are you sure you want to RESET Member ID #${memberId}?\n\nUse this if the user logged in with the WRONG ID. It will wipe this registration and kick their device back to the login screen.`)) return;
 
@@ -452,7 +715,7 @@
     function filterMembersTable() {
       const q = document.getElementById("search-member").value.toLowerCase();
       const filtered = cachedMembers.filter(m => 
-        m.memberId.includes(q) || m.fullName.toLowerCase().includes(q) || m.branch.toLowerCase().includes(q)
+        m.memberId.includes(q) || m.fullName.toLowerCase().includes(q) || (m.branch && m.branch.toLowerCase().includes(q))
       );
       renderMembersTable(filtered);
     }
@@ -599,7 +862,6 @@
             const formattedTimeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             const fullDateTime = `${formattedDateStr} - ${formattedTimeStr}`;
 
-            // Combine Barangay, Municipality, Province
             const addressParts = [log.barangay, log.municipality, log.province].filter(Boolean);
             const registeredAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No Address Set';
 
@@ -622,16 +884,16 @@
               <tr>
                 <td>
                   <strong>${log.fullName}</strong><br>
-                  <small style="color:#666;">ID: ${log.memberId}</small>
+                  <small style="color:var(--text-muted);">ID: ${log.memberId}</small>
                 </td>
                 <td>
                   <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
                     ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
                   </span>
                 </td>
-                <td style="font-size:0.82rem; color:#333;">${registeredAddress}</td>
-                <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:#1976d2; font-weight:bold;">📍 Open Map</a>` : 'No GPS'}</td>
-                <td style="font-size:0.78rem; color:#555;">${fullDateTime}</td>
+                <td style="font-size:0.82rem; color:var(--text);">${registeredAddress}</td>
+                <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:var(--secondary); font-weight:bold; text-decoration:none;">📍 Open Map</a>` : 'No GPS'}</td>
+                <td style="font-size:0.78rem; color:var(--text-muted);">${fullDateTime}</td>
                 <td>${actionButton}</td>
               </tr>
             `;
@@ -644,7 +906,7 @@
       }
     }
 
-    // NEW FUNCTION: UPDATE STATUS IN GOOGLE SHEETS
+    // UPDATE STATUS IN GOOGLE SHEETS
     async function markStatusResolved(statusId, resolutionType) {
       const confirmMsg = resolutionType === 'RESOLVED_OK' ? "Mark this member status as Reviewed/OK?" : "Confirm that Emergency Assistance/Rescue has been dispatched?";
       if (!confirm(confirmMsg)) return;
@@ -660,7 +922,7 @@
         }).then(r => r.json());
 
         if (res.success) {
-          loadSafetyLogs(); // Refresh table automatically
+          loadSafetyLogs();
         } else {
           alert("Error: " + res.error);
         }
