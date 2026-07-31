@@ -1174,7 +1174,7 @@
           const response = await fetch(GAS_BACKEND_URL, {
             method: "POST",
             body: JSON.stringify({
-              action: "broadcastEmergencyAlertBatch",
+              action: "broadcastEmergencyAlert",
               payload: broadcastState.payload,
               offset: broadcastState.sentCount,
               limit: currentBatch
