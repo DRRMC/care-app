@@ -450,13 +450,14 @@
               <tr>
                 <th>Member ID</th>
                 <th>Full Name</th>
+                <th>Registered Email</th>
                 <th>Branch / Location</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="members-table-body">
-              <tr><td colspan="5" style="text-align:center;">Loading members...</td></tr>
+              <tr><td colspan="6" style="text-align:center;">Loading members...</td></tr>
             </tbody>
           </table>
         </div>
@@ -545,8 +546,8 @@
     });
 
     async function handleOfficerLogin() {
-      const id = document.getElementById("officer-id").value;
-      const pass = document.getElementById("officer-password").value;
+      const id = document.getElementById("officer-id").value.trim();
+      const pass = document.getElementById("officer-password").value.trim();
 
       if (!id || !pass) { alert("Enter Officer ID and Password!"); return; }
 
@@ -656,14 +657,14 @@
           renderMembersTable(cachedMembers);
         }
       } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Unable to load members.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Unable to load members.</td></tr>";
       }
     }
 
     function renderMembersTable(members) {
       const tbody = document.getElementById("members-table-body");
       if (members.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No members registered yet.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No members registered yet.</td></tr>";
         return;
       }
 
@@ -676,6 +677,7 @@
         <tr>
           <td style="font-weight:bold; font-family: monospace; font-size: 0.95rem;">${m.memberId}</td>
           <td style="font-weight: 600;">${m.fullName}</td>
+          <td style="font-size: 0.82rem; color: var(--text-muted);">${m.email || '--'}</td>
           <td>${m.branch || '--'} <span style="color:var(--text-muted); font-size: 0.8rem;">(${m.municipality || '--'})</span></td>
           <td>
             <span class="badge ${badgeClass}">${m.status}</span>
@@ -906,7 +908,6 @@
       }
     }
 
-    // UPDATE STATUS IN GOOGLE SHEETS
     async function markStatusResolved(statusId, resolutionType) {
       const confirmMsg = resolutionType === 'RESOLVED_OK' ? "Mark this member status as Reviewed/OK?" : "Confirm that Emergency Assistance/Rescue has been dispatched?";
       if (!confirm(confirmMsg)) return;
