@@ -292,6 +292,7 @@
     }
 
     .badge-active { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .badge-pending { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
     .badge-resigned { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .badge-reset { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
 
@@ -366,14 +367,40 @@
     <div id="view-dashboard" class="hidden">
 
       <div class="nav-tabs">
-        <div id="tab-broadcast" class="tab-btn active" onclick="switchTab('broadcast')">⚡ Broadcast Alert</div>
+        <div id="tab-pending" class="tab-btn active" onclick="switchTab('pending')">⏳ Pending Approvals</div>
+        <div id="tab-broadcast" class="tab-btn" onclick="switchTab('broadcast')">⚡ Broadcast Alert</div>
         <div id="tab-members" class="tab-btn" onclick="switchTab('members')">👥 Member Control</div>
         <div id="tab-officers" class="tab-btn" onclick="switchTab('officers')">🔑 Add Officer</div>
         <div id="tab-safety" class="tab-btn" onclick="switchTab('safety')">💚 Safety Logs</div>
       </div>
 
-      <!-- TAB 1: BROADCAST -->
-      <div id="sec-broadcast" class="card">
+      <!-- TAB 1: PENDING ACCESS APPROVALS -->
+      <div id="sec-pending" class="card">
+        <h2>
+          <span>⏳ Pending Access Requests</span>
+          <button onclick="loadPendingApprovals()" class="action-btn" style="background:var(--secondary); font-size:0.85rem; padding: 8px 14px;">🔄 Refresh List</button>
+        </h2>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Registered Email</th>
+                <th>CP Number (Mobile)</th>
+                <th>Request Date</th>
+                <th>Officer Action</th>
+              </tr>
+            </thead>
+            <tbody id="pending-table-body">
+              <tr><td colspan="5" style="text-align:center;">Loading pending approval requests...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: BROADCAST EMERGENCY ALERT -->
+      <div id="sec-broadcast" class="card hidden">
         <h2>Broadcast Emergency Alert</h2>
 
         <div class="form-group">
@@ -433,7 +460,7 @@
         </button>
       </div>
 
-      <!-- TAB 2: MEMBER CONTROL -->
+      <!-- TAB 3: MEMBER CONTROL -->
       <div id="sec-members" class="card hidden">
         <h2>
           <span>Cooperative Member Registry</span>
@@ -451,7 +478,7 @@
                 <th>Member ID</th>
                 <th>Full Name</th>
                 <th>Registered Email</th>
-                <th>Branch / Location</th>
+                <th>CP Number / Location</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -463,7 +490,7 @@
         </div>
       </div>
 
-      <!-- TAB 3: REGISTER NEW OFFICER (AUTO-HASH) -->
+      <!-- TAB 4: REGISTER NEW OFFICER -->
       <div id="sec-officers" class="card hidden">
         <h2>Register New Command Officer</h2>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
@@ -501,7 +528,7 @@
         </button>
       </div>
 
-      <!-- TAB 4: SAFETY LOGS -->
+      <!-- TAB 5: SAFETY LOGS -->
       <div id="sec-safety" class="card hidden">
         <h2>
           <span>Live Safety Feed</span>
@@ -537,7 +564,7 @@
     let currentOfficer = null;
     let cachedMembers = [];
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", function() {
       const savedOfficer = localStorage.getItem("care_officer_session");
       if (savedOfficer) {
         currentOfficer = JSON.parse(savedOfficer);
@@ -549,16 +576,24 @@
       const id = document.getElementById("officer-id").value.trim();
       const pass = document.getElementById("officer-password").value.trim();
 
-      if (!id || !pass) { alert("Enter Officer ID and Password!"); return; }
+      if (!id || !pass) {
+        alert("Please enter Officer ID and Password!");
+        return;
+      }
 
       setBtnLoading("btn-officer-login", true, "Login to Command Center");
 
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
-          body: JSON.stringify({ action: "officerLogin", officerId: id, password: pass })
-        }).then(r => r.json());
+          body: JSON.stringify({
+            action: "officerLogin",
+            officerId: id,
+            password: pass
+          })
+        });
 
+        const res = await response.json();
         setBtnLoading("btn-officer-login", false, "Login to Command Center");
 
         if (res.success) {
@@ -581,6 +616,7 @@
 
       populateOfficerBranchDropdown();
       fetchMemberLocations();
+      loadPendingApprovals();
       loadMembersList();
       loadSafetyLogs();
     }
@@ -591,7 +627,11 @@
     }
 
     function switchTab(tabName) {
-      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(function(btn) {
+        btn.classList.remove("active");
+      });
+
+      document.getElementById("sec-pending").classList.add("hidden");
       document.getElementById("sec-broadcast").classList.add("hidden");
       document.getElementById("sec-members").classList.add("hidden");
       document.getElementById("sec-officers").classList.add("hidden");
@@ -601,7 +641,75 @@
       document.getElementById("sec-" + tabName).classList.remove("hidden");
     }
 
-    /* REGISTER NEW OFFICER WITH AUTO HASHING */
+    /* LOAD PENDING MEMBER APPROVALS */
+    async function loadPendingApprovals() {
+      const tbody = document.getElementById("pending-table-body");
+      try {
+        const response = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "getPendingApprovals" })
+        });
+        const res = await response.json();
+
+        if (res.success && res.pending.length > 0) {
+          let rowsHtml = "";
+          for (let i = 0; i < res.pending.length; i++) {
+            const p = res.pending[i];
+            const dateStr = p.dateRegistered ? new Date(p.dateRegistered).toLocaleDateString() : 'Today';
+
+            rowsHtml += '<tr>';
+            rowsHtml += '<td style="font-weight:bold; font-family: monospace; font-size: 0.95rem;">' + p.memberId + '</td>';
+            rowsHtml += '<td>' + (p.email || '--') + '</td>';
+            rowsHtml += '<td>' + (p.cpNumber || '--') + '</td>';
+            rowsHtml += '<td style="font-size:0.8rem; color:#666;">' + dateStr + '</td>';
+            rowsHtml += '<td>';
+            rowsHtml += '<div class="action-group">';
+            rowsHtml += '<button class="action-btn" style="background:#2e7d32;" onclick="approveAccess(\'' + p.memberId + '\', \'ACTIVE\')">✅ Approve</button>';
+            rowsHtml += '<button class="action-btn" style="background:#c62828;" onclick="approveAccess(\'' + p.memberId + '\', \'REJECTED\')">❌ Reject</button>';
+            rowsHtml += '</div>';
+            rowsHtml += '</td>';
+            rowsHtml += '</tr>';
+          }
+          tbody.innerHTML = rowsHtml;
+        } else {
+          tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No pending approval requests at this time.</td></tr>";
+        }
+      } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Unable to load pending requests.</td></tr>";
+      }
+    }
+
+    /* APPROVE OR REJECT ACCESS REQUEST */
+    async function approveAccess(memberId, decision) {
+      const actionText = decision === 'ACTIVE' ? 'APPROVE' : 'REJECT';
+      if (!confirm('Are you sure you want to ' + actionText + ' access for Member ID #' + memberId + '?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "approveMemberAccess",
+            memberId: memberId,
+            decision: decision
+          })
+        });
+        const res = await response.json();
+
+        if (res.success) {
+          alert('✅ ' + res.message);
+          loadPendingApprovals();
+          loadMembersList();
+        } else {
+          alert('Error: ' + res.error);
+        }
+      } catch (e) {
+        alert('Network Error: ' + e.message);
+      }
+    }
+
+    /* REGISTER NEW OFFICER */
     async function handleRegisterOfficer() {
       const officerId = document.getElementById("new-officer-id").value.trim();
       const memberId = document.getElementById("new-officer-member-id").value.trim();
@@ -616,7 +724,7 @@
       setBtnLoading("btn-register-officer", true, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
 
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({
             action: "registerOfficer",
@@ -625,7 +733,8 @@
             role: role,
             password: password
           })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
 
@@ -647,10 +756,11 @@
     async function loadMembersList() {
       const tbody = document.getElementById("members-table-body");
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({ action: "getMembersList" })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         if (res.success) {
           cachedMembers = res.members;
@@ -668,44 +778,51 @@
         return;
       }
 
-      tbody.innerHTML = members.map(m => {
+      let rowsHtml = "";
+      for (let i = 0; i < members.length; i++) {
+        const m = members[i];
         let badgeClass = 'badge-active';
+        if (m.status === 'PENDING') badgeClass = 'badge-pending';
         if (m.status === 'RESIGNED') badgeClass = 'badge-resigned';
         if (m.status === 'RESET') badgeClass = 'badge-reset';
 
-        return `
-        <tr>
-          <td style="font-weight:bold; font-family: monospace; font-size: 0.95rem;">${m.memberId}</td>
-          <td style="font-weight: 600;">${m.fullName}</td>
-          <td style="font-size: 0.82rem; color: var(--text-muted);">${m.email || '--'}</td>
-          <td>${m.branch || '--'} <span style="color:var(--text-muted); font-size: 0.8rem;">(${m.municipality || '--'})</span></td>
-          <td>
-            <span class="badge ${badgeClass}">${m.status}</span>
-          </td>
-          <td>
-            <div class="action-group">
-              <button class="action-btn" style="background:#f57c00;" onclick="resetMemberAccount('${m.memberId}')">🔄 Reset ID</button>
-              <button class="action-btn btn-unlink" onclick="unlinkDevice('${m.memberId}')">📱 Unlink Phone</button>
-              ${m.status === 'ACTIVE' ? `<button class="action-btn btn-deactivate" onclick="deactivateMember('${m.memberId}')">⛔ Set Resigned</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `}).join('');
+        rowsHtml += '<tr>';
+        rowsHtml += '<td style="font-weight:bold; font-family: monospace; font-size: 0.95rem;">' + m.memberId + '</td>';
+        rowsHtml += '<td style="font-weight: 600;">' + m.fullName + '</td>';
+        rowsHtml += '<td style="font-size: 0.82rem; color: var(--text-muted);">' + (m.email || '--') + '</td>';
+        rowsHtml += '<td>' + (m.mobile || '--') + '</td>';
+        rowsHtml += '<td><span class="badge ' + badgeClass + '">' + m.status + '</span></td>';
+        rowsHtml += '<td>';
+        rowsHtml += '<div class="action-group">';
+        rowsHtml += '<button class="action-btn" style="background:#f57c00;" onclick="resetMemberAccount(\'' + m.memberId + '\')">🔄 Reset ID</button>';
+        rowsHtml += '<button class="action-btn btn-unlink" onclick="unlinkDevice(\'' + m.memberId + '\')">📱 Unlink Phone</button>';
+        if (m.status === 'ACTIVE') {
+          rowsHtml += '<button class="action-btn btn-deactivate" onclick="deactivateMember(\'' + m.memberId + '\')">⛔ Set Resigned</button>';
+        }
+        rowsHtml += '</div>';
+        rowsHtml += '</td>';
+        rowsHtml += '</tr>';
+      }
+
+      tbody.innerHTML = rowsHtml;
     }
 
-    // RESET MEMBER ACCOUNT
+    /* RESET MEMBER ACCOUNT */
     async function resetMemberAccount(memberId) {
-      if (!confirm(`Are you sure you want to RESET Member ID #${memberId}?\n\nUse this if the user logged in with the WRONG ID. It will wipe this registration and kick their device back to the login screen.`)) return;
+      if (!confirm('Are you sure you want to RESET Member ID #' + memberId + '?\n\nIt will wipe this registration and kick their device back to the login screen.')) {
+        return;
+      }
 
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({ action: "resetMemberAccount", memberId: memberId })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         if (res.success) {
           alert("✅ " + res.message);
-          loadMembersList(); // Refresh table
+          loadMembersList();
         } else {
           alert("Error: " + res.error);
         }
@@ -716,19 +833,28 @@
 
     function filterMembersTable() {
       const q = document.getElementById("search-member").value.toLowerCase();
-      const filtered = cachedMembers.filter(m => 
-        m.memberId.includes(q) || m.fullName.toLowerCase().includes(q) || (m.branch && m.branch.toLowerCase().includes(q))
-      );
+      const filtered = [];
+      for (let i = 0; i < cachedMembers.length; i++) {
+        const m = cachedMembers[i];
+        if (m.memberId.toLowerCase().includes(q) || 
+            m.fullName.toLowerCase().includes(q) || 
+            (m.branch && m.branch.toLowerCase().includes(q))) {
+          filtered.push(m);
+        }
+      }
       renderMembersTable(filtered);
     }
 
     async function deactivateMember(memberId) {
-      if (!confirm(`Are you sure you want to set Member #${memberId} as RESIGNED?`)) return;
+      if (!confirm('Are you sure you want to set Member #' + memberId + ' as RESIGNED?')) {
+        return;
+      }
 
-      const res = await fetch(GAS_BACKEND_URL, {
+      const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
         body: JSON.stringify({ action: "updateMemberStatus", memberId: memberId, status: "RESIGNED" })
-      }).then(r => r.json());
+      });
+      const res = await response.json();
 
       if (res.success) {
         alert(res.message);
@@ -737,12 +863,15 @@
     }
 
     async function unlinkDevice(memberId) {
-      if (!confirm(`Unlink phone token for Member #${memberId}?`)) return;
+      if (!confirm('Unlink phone token for Member #' + memberId + '?')) {
+        return;
+      }
 
-      const res = await fetch(GAS_BACKEND_URL, {
+      const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
         body: JSON.stringify({ action: "unlinkMemberDevice", memberId: memberId })
-      }).then(r => r.json());
+      });
+      const res = await response.json();
 
       if (res.success) {
         alert(res.message);
@@ -763,18 +892,31 @@
 
     async function fetchMemberLocations() {
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({ action: "getRegisteredLocations" })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         if (res.success) {
           const provSel = document.getElementById("target-province-select");
           const muniSel = document.getElementById("target-municipality-select");
-          provSel.innerHTML = '<option value="">-- Select Province --</option>' + res.provinces.map(p => `<option value="${p}">${p}</option>`).join('');
-          muniSel.innerHTML = '<option value="">-- Select Municipality --</option>' + res.municipalities.map(m => `<option value="${m}">${m}</option>`).join('');
+
+          let provHtml = '<option value="">-- Select Province --</option>';
+          for (let i = 0; i < res.provinces.length; i++) {
+            provHtml += '<option value="' + res.provinces[i] + '">' + res.provinces[i] + '</option>';
+          }
+          provSel.innerHTML = provHtml;
+
+          let muniHtml = '<option value="">-- Select Municipality --</option>';
+          for (let j = 0; j < res.municipalities.length; j++) {
+            muniHtml += '<option value="' + res.municipalities[j] + '">' + res.municipalities[j] + '</option>';
+          }
+          muniSel.innerHTML = muniHtml;
         }
-      } catch (e) { console.error("Locations load failed:", e); }
+      } catch (e) {
+        console.error("Locations load failed:", e);
+      }
     }
 
     function handleTargetChange() {
@@ -817,14 +959,19 @@
       const targetType = document.getElementById("target-type").value;
       const targetValue = getSelectedTargetValue();
 
-      if (!title || !message) { alert("Enter title and message!"); return; }
+      if (!title || !message) {
+        alert("Enter title and message!");
+        return;
+      }
 
-      if (!confirm(`Broadcast alert: "${title}" to target "${targetType}" (${targetValue || 'ALL'})?`)) return;
+      if (!confirm('Broadcast alert: "' + title + '" to target "' + targetType + '"?')) {
+        return;
+      }
 
       setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({
             action: "broadcastEmergencyAlert",
@@ -836,13 +983,16 @@
             targetValue: targetValue,
             senderId: currentOfficer ? currentOfficer.officerId : "DRRMC-OFFICER"
           })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
         if (res.success) {
-          alert(`Alert Dispatched Successfully!\nTargeted: ${res.summary.totalTargeted}\nDelivered: ${res.summary.totalSent}`);
-        } else { alert("Dispatch Failed: " + res.error); }
+          alert('Alert Dispatched Successfully!\nTargeted: ' + res.summary.totalTargeted + '\nDelivered: ' + res.summary.totalSent);
+        } else {
+          alert("Dispatch Failed: " + res.error);
+        }
       } catch (e) {
         setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
         alert("Network Error: " + e.message);
@@ -852,17 +1002,20 @@
     async function loadSafetyLogs() {
       const tbody = document.getElementById("safety-logs-body");
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({ action: "getEmergencyStatusLogs" })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         if (res.success && res.logs.length > 0) {
-          tbody.innerHTML = res.logs.map(log => {
+          let rowsHtml = "";
+          for (let i = 0; i < res.logs.length; i++) {
+            const log = res.logs[i];
             const dateObj = new Date(log.time);
             const formattedDateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const formattedTimeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            const fullDateTime = `${formattedDateStr} - ${formattedTimeStr}`;
+            const fullDateTime = formattedDateStr + ' - ' + formattedTimeStr;
 
             const addressParts = [log.barangay, log.municipality, log.province].filter(Boolean);
             const registeredAddress = addressParts.length > 0 ? addressParts.join(', ') : 'No Address Set';
@@ -870,36 +1023,28 @@
             let actionButton = '';
             if (log.resolution === 'PENDING' || !log.resolution) {
               if (log.type === 'SAFE') {
-                actionButton = `<button class="action-btn" style="background:#2e7d32;" onclick="markStatusResolved('${log.statusId}', 'RESOLVED_OK')">Mark OK</button>`;
+                actionButton = '<button class="action-btn" style="background:#2e7d32;" onclick="markStatusResolved(\'' + log.statusId + '\', \'RESOLVED_OK\')">Mark OK</button>';
               } else {
-                actionButton = `<button class="action-btn" style="background:#b71c1c;" onclick="markStatusResolved('${log.statusId}', 'RESCUED')">Mark Rescued 🚑</button>`;
+                actionButton = '<button class="action-btn" style="background:#b71c1c;" onclick="markStatusResolved(\'' + log.statusId + '\', \'RESCUED\')">Mark Rescued 🚑</button>';
               }
             } else {
               if (log.resolution === 'RESOLVED_OK') {
-                actionButton = `<span style="color:#2e7d32; font-weight:bold; font-size:0.8rem;">✅ Reviewed (OK)</span>`;
+                actionButton = '<span style="color:#2e7d32; font-weight:bold; font-size:0.8rem;">✅ Reviewed (OK)</span>';
               } else {
-                actionButton = `<span style="color:#b71c1c; font-weight:bold; font-size:0.8rem;">🚑 Rescued</span>`;
+                actionButton = '<span style="color:#b71c1c; font-weight:bold; font-size:0.8rem;">🚑 Rescued</span>';
               }
             }
 
-            return `
-              <tr>
-                <td>
-                  <strong>${log.fullName}</strong><br>
-                  <small style="color:var(--text-muted);">ID: ${log.memberId}</small>
-                </td>
-                <td>
-                  <span class="badge ${log.type === 'SAFE' ? 'badge-active' : 'badge-resigned'}">
-                    ${log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP'}
-                  </span>
-                </td>
-                <td style="font-size:0.82rem; color:var(--text);">${registeredAddress}</td>
-                <td>${log.mapLink && log.mapLink.includes('http') ? `<a href="${log.mapLink}" target="_blank" style="color:var(--secondary); font-weight:bold; text-decoration:none;">📍 Open Map</a>` : 'No GPS'}</td>
-                <td style="font-size:0.78rem; color:var(--text-muted);">${fullDateTime}</td>
-                <td>${actionButton}</td>
-              </tr>
-            `;
-          }).join('');
+            rowsHtml += '<tr>';
+            rowsHtml += '<td><strong>' + log.fullName + '</strong><br><small style="color:var(--text-muted);">ID: ' + log.memberId + '</small></td>';
+            rowsHtml += '<td><span class="badge ' + (log.type === 'SAFE' ? 'badge-active' : 'badge-resigned') + '">' + (log.type === 'SAFE' ? '💚 SAFE' : '🚨 SOS HELP') + '</span></td>';
+            rowsHtml += '<td style="font-size:0.82rem; color:var(--text);">' + registeredAddress + '</td>';
+            rowsHtml += '<td>' + (log.mapLink && log.mapLink.includes('http') ? '<a href="' + log.mapLink + '" target="_blank" style="color:var(--secondary); font-weight:bold; text-decoration:none;">📍 Open Map</a>' : 'No GPS') + '</td>';
+            rowsHtml += '<td style="font-size:0.78rem; color:var(--text-muted);">' + fullDateTime + '</td>';
+            rowsHtml += '<td>' + actionButton + '</td>';
+            rowsHtml += '</tr>';
+          }
+          tbody.innerHTML = rowsHtml;
         } else {
           tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No safety logs recorded yet.</td></tr>";
         }
@@ -913,14 +1058,15 @@
       if (!confirm(confirmMsg)) return;
 
       try {
-        const res = await fetch(GAS_BACKEND_URL, {
+        const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
           body: JSON.stringify({
             action: "resolveEmergencyStatus",
             statusId: statusId,
             resolution: resolutionType
           })
-        }).then(r => r.json());
+        });
+        const res = await response.json();
 
         if (res.success) {
           loadSafetyLogs();
@@ -937,10 +1083,10 @@
       if (!btn) return;
       if (isLoading) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="spinner"></div> <span>Processing...</span>`;
+        btn.innerHTML = '<div class="spinner"></div> <span>Processing...</span>';
       } else {
         btn.disabled = false;
-        btn.innerHTML = originalText;
+        btn.innerHTML = '<span>' + originalText + '</span>';
       }
     }
   </script>
