@@ -303,6 +303,7 @@
       align-items: center;
     }
 
+    /* UTILITIES */
     .spinner {
       width: 18px; height: 18px; 
       border: 2px solid #ffffff; 
@@ -316,6 +317,7 @@
 
     .hidden { display: none !important; }
 
+    /* RESPONSIVE BREAKPOINTS */
     @media (max-width: 768px) {
       .header { flex-direction: column; text-align: center; gap: 12px; }
       .header-title-box { flex-direction: column; }
@@ -326,65 +328,6 @@
       .action-group { flex-direction: column; align-items: stretch; }
       .action-btn { justify-content: center; width: 100%; }
     }
-
-    /* MODERN COMMAND CENTER MODAL & TOAST */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.25s ease;
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-    .modal-card {
-      background: #ffffff; border-radius: 16px; padding: 28px; text-align: center;
-      max-width: 420px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-      transform: scale(0.9); transition: transform 0.25s ease; border: 1px solid rgba(226, 232, 240, 0.8);
-    }
-    .modal-overlay.active .modal-card { transform: scale(1); }
-
-    .modal-icon { font-size: 3rem; margin-bottom: 12px; }
-    .modal-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-    .modal-body { font-size: 0.92rem; color: #475569; margin-bottom: 24px; line-height: 1.5; white-space: pre-line; }
-
-    .modal-btn-group { display: flex; gap: 12px; justify-content: center; }
-    .modal-btn {
-      flex: 1; padding: 12px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s;
-    }
-    .modal-btn:active { transform: scale(0.97); }
-    .modal-btn-primary { background: #b71c1c; color: white; box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3); }
-    .modal-btn-cancel { background: #e2e8f0; color: #475569; }
-
-    #toast {
-      position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white;
-      padding: 14px 24px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0;
-      transition: all 0.3s ease; z-index: 10000; display: flex; align-items: center; gap: 8px;
-    }
-    #toast.show { transform: translateY(0); opacity: 1; }
-
-    /* BROADCAST PROGRESS BAR */
-    .progress-card {
-      background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px;
-      padding: 16px; margin: 20px 0;
-    }
-    .progress-bar-bg {
-      width: 100%; height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 10px 0;
-    }
-    .progress-bar-fill {
-      height: 100%; width: 0%; background: linear-gradient(90deg, #1976d2, #2e7d32);
-      transition: width 0.3s ease;
-    }
-    .progress-stats-row {
-      display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text);
-    }
-    .progress-status-badge {
-      display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 800; margin-top: 6px;
-    }
-    .status-running { background: #e3f2fd; color: #1976d2; }
-    .status-paused { background: #fff3e0; color: #ef6c00; }
-    .status-completed { background: #e8f5e9; color: #2e7d32; }
   </style>
 </head>
 <body>
@@ -394,8 +337,8 @@
       <div class="header-title-box">
         <span style="font-size: 2rem;">🚨</span>
         <div>
-          <h1>APECC DRRMC COMMAND CENTER</h1>
-          <p>Cooperative Emergency Broadcast & Governance Portal</p>
+          <h1>DRRMC COMMAND CENTER</h1>
+          <p>APECC Emergency Broadcast & Governance Portal</p>
         </div>
       </div>
       <button id="btn-logout" class="action-btn btn-deactivate hidden" onclick="logoutOfficer()">Logout</button>
@@ -404,7 +347,7 @@
 
   <div class="container">
 
-    <!-- LOGIN VIEW -->
+    <!-- LOGIN -->
     <div id="view-login" class="card" style="max-width: 420px; margin: 40px auto;">
       <h2>Officer Login</h2>
       <div class="form-group">
@@ -420,7 +363,7 @@
       </button>
     </div>
 
-    <!-- DASHBOARD VIEW -->
+    <!-- DASHBOARD -->
     <div id="view-dashboard" class="hidden">
 
       <div class="nav-tabs">
@@ -496,42 +439,20 @@
         <div class="form-group">
           <label for="target-type">Recipient Filter</label>
           <select id="target-type" onchange="handleTargetChange()">
-            <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic Broadcast)</option>
+            <option value="ALL">🌐 ALL COOPERATIVE MEMBERS (~20,000 via FCM Topic)</option>
             <option value="BRANCH">🏢 By Branch (Central Office, B0001 - B1863)</option>
             <option value="PROVINCE">📍 By Registered Province</option>
             <option value="MUNICIPALITY">🏙️ By Registered Municipality / City</option>
-            <option value="MEMBER">👤 Single Member ID</option>
+            <option value="MEMBER">👤 Single Member ID (5 Digits)</option>
           </select>
         </div>
 
         <div id="target-value-group" class="form-group hidden">
-          <label id="target-value-label">Target Filter Value</label>
+          <label id="target-value-label">Target Filter</label>
           <select id="target-branch-select" class="hidden"></select>
           <select id="target-province-select" class="hidden"></select>
           <select id="target-municipality-select" class="hidden"></select>
-          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 18243" maxlength="5">
-        </div>
-
-        <!-- LIVE BROADCAST PROGRESS & AUTO-RESUME CARD -->
-        <div id="broadcast-progress-box" class="progress-card hidden">
-          <div class="progress-stats-row">
-            <span id="progress-text-counter">0 / 0 Members Sent</span>
-            <span id="progress-text-percent">0%</span>
-          </div>
-
-          <div class="progress-bar-bg">
-            <div id="progress-bar-fill" class="progress-bar-fill"></div>
-          </div>
-
-          <div class="progress-stats-row" style="color: var(--text-muted); font-size: 0.78rem;">
-            <span id="progress-text-eta">⏱️ Calculating remaining time...</span>
-            <span id="progress-status-badge" class="progress-status-badge status-running">🟢 Broadcasting...</span>
-          </div>
-
-          <div id="broadcast-control-btns" class="form-row" style="margin-top: 12px;">
-            <button id="btn-pause-broadcast" class="btn btn-secondary" style="padding: 8px;" onclick="pauseBroadcast()">⏸️ Pause</button>
-            <button id="btn-resume-broadcast" class="btn btn-success hidden" style="padding: 8px;" onclick="resumeBroadcast()">▶️ Resume</button>
-          </div>
+          <input type="text" id="target-member-input" class="hidden" placeholder="e.g. 00552">
         </div>
 
         <button id="btn-broadcast" class="btn" onclick="dispatchEmergencyAlert()">
@@ -573,7 +494,7 @@
       <div id="sec-officers" class="card hidden">
         <h2>Register New Command Officer</h2>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4;">
-          Create new administrative access accounts. Passwords are automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
+          Create new administrative access accounts. Password will be automatically salted and hashed using SHA-256 before recording into the <code>OFFICERS</code> Google Sheet tab.
         </p>
 
         <div class="form-row">
@@ -582,8 +503,8 @@
             <input type="text" id="new-officer-id" placeholder="e.g. OFF-002">
           </div>
           <div class="form-group">
-            <label for="new-officer-member-id">Linked Member ID*</label>
-            <input type="text" id="new-officer-member-id" placeholder="e.g. 18243" maxlength="5">
+            <label for="new-officer-member-id">Linked Member ID (5 Digits)*</label>
+            <input type="text" id="new-officer-member-id" placeholder="e.g. 00552">
           </div>
         </div>
 
@@ -637,105 +558,26 @@
 
   </div>
 
-  <!-- CUSTOM MODAL DIALOG -->
-  <div id="custom-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div id="modal-icon" class="modal-icon">🚨</div>
-      <div id="modal-title" class="modal-title">Command Center Notice</div>
-      <div id="modal-body" class="modal-body">Notification details...</div>
-      <div class="modal-btn-group">
-        <button id="modal-cancel-btn" class="modal-btn modal-btn-cancel hidden">Cancel</button>
-        <button id="modal-action-btn" class="modal-btn modal-btn-primary">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast"><span>🔔 Notification message</span></div>
-
   <script>
     const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
 
     let currentOfficer = null;
     let cachedMembers = [];
 
-   // REAL-TIME INSTANT BROADCAST ENGINE
-let broadcastState = {
-  isBroadcasting: false,
-  isPaused: false,
-  totalMembers: 0,
-  sentCount: 0,
-  startTime: 0,
-  payload: null
-};
-
     document.addEventListener("DOMContentLoaded", function() {
-      const savedOfficer = localStorage.getItem("apecc_officer_session");
+      const savedOfficer = localStorage.getItem("care_officer_session");
       if (savedOfficer) {
         currentOfficer = JSON.parse(savedOfficer);
         showDashboard();
       }
     });
 
-    function showToast(msg) {
-      const toast = document.getElementById("toast");
-      toast.innerHTML = `<span>${msg}</span>`;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 3500);
-    }
-
-    function showModal(icon, title, body) {
-      return new Promise((resolve) => {
-        document.getElementById("modal-icon").textContent = icon;
-        document.getElementById("modal-title").textContent = title;
-        document.getElementById("modal-body").textContent = body;
-        document.getElementById("modal-cancel-btn").classList.add("hidden");
-        
-        const actionBtn = document.getElementById("modal-action-btn");
-        actionBtn.onclick = () => {
-          document.getElementById("custom-modal").classList.remove("active");
-          resolve(true);
-        };
-        document.getElementById("custom-modal").classList.add("active");
-      });
-    }
-
-    function showConfirm(icon, title, body) {
-      return new Promise((resolve) => {
-        document.getElementById("modal-icon").textContent = icon;
-        document.getElementById("modal-title").textContent = title;
-        document.getElementById("modal-body").textContent = body;
-        
-        const cancelBtn = document.getElementById("modal-cancel-btn");
-        const actionBtn = document.getElementById("modal-action-btn");
-        cancelBtn.classList.remove("hidden");
-
-        cancelBtn.onclick = () => {
-          document.getElementById("custom-modal").classList.remove("active");
-          resolve(false);
-        };
-        actionBtn.onclick = () => {
-          document.getElementById("custom-modal").classList.remove("active");
-          resolve(true);
-        };
-        document.getElementById("custom-modal").classList.add("active");
-      });
-    }
-
-    function formatToFiveDigits(val) {
-      if (!val) return "";
-      let cleaned = val.replace(/\D/g, '');
-      if (!cleaned) return "";
-      while (cleaned.length < 5) cleaned = "0" + cleaned;
-      return cleaned.substring(cleaned.length - 5);
-    }
-
     async function handleOfficerLogin() {
       const id = document.getElementById("officer-id").value.trim();
       const pass = document.getElementById("officer-password").value.trim();
 
       if (!id || !pass) {
-        await showModal("⚠️", "Input Required", "Please enter Officer ID and Password!");
+        alert("Please enter Officer ID and Password!");
         return;
       }
 
@@ -756,14 +598,14 @@ let broadcastState = {
 
         if (res.success) {
           currentOfficer = res.officer;
-          localStorage.setItem("apecc_officer_session", JSON.stringify(currentOfficer));
+          localStorage.setItem("care_officer_session", JSON.stringify(currentOfficer));
           showDashboard();
         } else {
-          await showModal("❌", "Login Failed", res.error);
+          alert("Login Failed: " + res.error);
         }
       } catch (e) {
         setBtnLoading("btn-officer-login", false, "Login to Command Center");
-        await showModal("⚠️", "Network Error", e.message);
+        alert("Network Error: " + e.message);
       }
     }
 
@@ -780,7 +622,7 @@ let broadcastState = {
     }
 
     function logoutOfficer() {
-      localStorage.removeItem("apecc_officer_session");
+      localStorage.removeItem("care_officer_session");
       location.reload();
     }
 
@@ -839,8 +681,10 @@ let broadcastState = {
 
     /* APPROVE OR REJECT ACCESS REQUEST */
     async function approveAccess(memberId, decision) {
-      const confirmed = await showConfirm(decision === 'ACTIVE' ? "✅" : "❌", "Confirm Decision", `Are you sure you want to set Member #${memberId} to ${decision}?`);
-      if (!confirmed) return;
+      const actionText = decision === 'ACTIVE' ? 'APPROVE' : 'REJECT';
+      if (!confirm('Are you sure you want to ' + actionText + ' access for Member ID #' + memberId + '?')) {
+        return;
+      }
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
@@ -848,34 +692,32 @@ let broadcastState = {
           body: JSON.stringify({
             action: "approveMemberAccess",
             memberId: memberId,
-            decision: decision,
-            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
+            decision: decision
           })
         });
         const res = await response.json();
 
         if (res.success) {
-          showToast('✅ ' + res.message);
+          alert('✅ ' + res.message);
           loadPendingApprovals();
           loadMembersList();
         } else {
-          await showModal("❌", "Error", res.error);
+          alert('Error: ' + res.error);
         }
       } catch (e) {
-        await showModal("⚠️", "Network Error", e.message);
+        alert('Network Error: ' + e.message);
       }
     }
 
     /* REGISTER NEW OFFICER */
     async function handleRegisterOfficer() {
       const officerId = document.getElementById("new-officer-id").value.trim();
-      const rawMemberId = document.getElementById("new-officer-member-id").value.trim();
-      const memberId = formatToFiveDigits(rawMemberId);
+      const memberId = document.getElementById("new-officer-member-id").value.trim();
       const role = document.getElementById("new-officer-role").value;
       const password = document.getElementById("new-officer-password").value.trim();
 
-      if (!officerId || !memberId || memberId.length !== 5 || !password) {
-        await showModal("⚠️", "Input Required", "Please enter a valid Officer ID, 5-Digit Member ID, and Password!");
+      if (!officerId || !memberId || !password) {
+        alert("Please fill in Officer ID, Member ID, and Password!");
         return;
       }
 
@@ -883,33 +725,30 @@ let broadcastState = {
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
-            method: "POST",
-            body: JSON.stringify({
-              action: "broadcastEmergencyAlert",
-              title: broadcastState.payload.title,
-              message: broadcastState.payload.message,
-              category: broadcastState.payload.category,
-              priority: broadcastState.payload.priority,
-              targetType: broadcastState.payload.targetType,
-              targetValue: broadcastState.payload.targetValue,
-              senderId: broadcastState.payload.senderId
-            })
-          });
+          method: "POST",
+          body: JSON.stringify({
+            action: "registerOfficer",
+            officerId: officerId,
+            memberId: memberId,
+            role: role,
+            password: password
+          })
+        });
         const res = await response.json();
 
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
 
         if (res.success) {
-          await showModal("✅", "Success", res.message);
+          alert("✅ Success: " + res.message);
           document.getElementById("new-officer-id").value = "";
           document.getElementById("new-officer-member-id").value = "";
           document.getElementById("new-officer-password").value = "";
         } else {
-          await showModal("❌", "Error", res.error);
+          alert("❌ Error: " + res.error);
         }
       } catch (e) {
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
-        await showModal("⚠️", "Network Error", e.message);
+        alert("Network Error: " + e.message);
       }
     }
 
@@ -970,28 +809,25 @@ let broadcastState = {
 
     /* RESET MEMBER ACCOUNT */
     async function resetMemberAccount(memberId) {
-      const confirmed = await showConfirm("🔄", "Reset Member Account", `Reset Member #${memberId}?\n\nThis will wipe their registration and disconnect their device.`);
-      if (!confirmed) return;
+      if (!confirm('Are you sure you want to RESET Member ID #' + memberId + '?\n\nIt will wipe this registration and kick their device back to the login screen.')) {
+        return;
+      }
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
           method: "POST",
-          body: JSON.stringify({ 
-            action: "resetMemberAccount", 
-            memberId: memberId,
-            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
-          })
+          body: JSON.stringify({ action: "resetMemberAccount", memberId: memberId })
         });
         const res = await response.json();
 
         if (res.success) {
-          showToast("✅ " + res.message);
+          alert("✅ " + res.message);
           loadMembersList();
         } else {
-          await showModal("❌", "Error", res.error);
+          alert("Error: " + res.error);
         }
       } catch (e) {
-        await showModal("⚠️", "Network Error", e.message);
+        alert("Network Error: " + e.message);
       }
     }
 
@@ -1010,8 +846,9 @@ let broadcastState = {
     }
 
     async function deactivateMember(memberId) {
-      const confirmed = await showConfirm("⛔", "Deactivate Member", `Are you sure you want to set Member #${memberId} as RESIGNED?`);
-      if (!confirmed) return;
+      if (!confirm('Are you sure you want to set Member #' + memberId + ' as RESIGNED?')) {
+        return;
+      }
 
       const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
@@ -1020,14 +857,15 @@ let broadcastState = {
       const res = await response.json();
 
       if (res.success) {
-        showToast(res.message);
+        alert(res.message);
         loadMembersList();
       }
     }
 
     async function unlinkDevice(memberId) {
-      const confirmed = await showConfirm("📱", "Unlink Device", `Unlink phone token for Member #${memberId}?`);
-      if (!confirmed) return;
+      if (!confirm('Unlink phone token for Member #' + memberId + '?')) {
+        return;
+      }
 
       const response = await fetch(GAS_BACKEND_URL, {
         method: "POST",
@@ -1036,12 +874,12 @@ let broadcastState = {
       const res = await response.json();
 
       if (res.success) {
-        showToast(res.message);
+        alert(res.message);
         loadMembersList();
       }
     }
 
-    /* BROADCASTING FUNCTIONS WITH RESUMABLE BATCH DISPATCH & PROGRESS BAR */
+    /* BROADCASTING FUNCTIONS */
     function populateOfficerBranchDropdown() {
       const select = document.getElementById("target-branch-select");
       if (!select) return;
@@ -1111,142 +949,54 @@ let broadcastState = {
       if (type === "BRANCH") return document.getElementById("target-branch-select").value;
       if (type === "PROVINCE") return document.getElementById("target-province-select").value;
       if (type === "MUNICIPALITY") return document.getElementById("target-municipality-select").value;
-      if (type === "MEMBER") return formatToFiveDigits(document.getElementById("target-member-input").value);
+      if (type === "MEMBER") return document.getElementById("target-member-input").value;
       return "";
     }
 
     async function dispatchEmergencyAlert() {
-  const title = document.getElementById("alert-title").value.trim();
-  const message = document.getElementById("alert-message").value.trim();
-  const targetType = document.getElementById("target-type").value;
-  const targetValue = getSelectedTargetValue();
+      const title = document.getElementById("alert-title").value;
+      const message = document.getElementById("alert-message").value;
+      const targetType = document.getElementById("target-type").value;
+      const targetValue = getSelectedTargetValue();
 
-  if (!title || !message) {
-    await showModal("⚠️", "Input Required", "Please enter title and message!");
-    return;
-  }
+      if (!title || !message) {
+        alert("Enter title and message!");
+        return;
+      }
 
-  // 1. CALCULATE REAL REGISTERED MEMBER COUNT
-  let realTargetCount = 0;
-  
-  if (targetType === "MEMBER") {
-    realTargetCount = 1;
-  } else if (targetType === "BRANCH" && targetValue) {
-    realTargetCount = cachedMembers.filter(m => m.branch === targetValue && m.status === "ACTIVE").length || 1;
-  } else if (targetType === "PROVINCE" && targetValue) {
-    realTargetCount = cachedMembers.filter(m => m.province === targetValue && m.status === "ACTIVE").length || 1;
-  } else if (targetType === "MUNICIPALITY" && targetValue) {
-    realTargetCount = cachedMembers.filter(m => m.municipality === targetValue && m.status === "ACTIVE").length || 1;
-  } else {
-    // ALL MEMBERS: Get exact active count from your database
-    realTargetCount = cachedMembers.filter(m => m.status === "ACTIVE").length || cachedMembers.length || 1;
-  }
+      if (!confirm('Broadcast alert: "' + title + '" to target "' + targetType + '"?')) {
+        return;
+      }
 
-  const confirmed = await showConfirm("⚡", "Confirm Emergency Broadcast", `Broadcast alert:\n"${title}" to ${realTargetCount.toLocaleString()} Registered Member(s)?`);
-  if (!confirmed) return;
+      setBtnLoading("btn-broadcast", true, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
-  // Initialize Broadcast State
-  broadcastState.payload = {
-    title: title,
-    message: message,
-    category: document.getElementById("alert-category").value,
-    priority: document.getElementById("alert-priority").value,
-    targetType: targetType,
-    targetValue: targetValue,
-    senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
-  };
+      try {
+        const response = await fetch(GAS_BACKEND_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "broadcastEmergencyAlert",
+            title: title,
+            message: message,
+            category: document.getElementById("alert-category").value,
+            priority: document.getElementById("alert-priority").value,
+            targetType: targetType,
+            targetValue: targetValue,
+            senderId: currentOfficer ? currentOfficer.officerId : "DRRMC-OFFICER"
+          })
+        });
+        const res = await response.json();
 
-  broadcastState.isBroadcasting = true;
-  broadcastState.isPaused = false;
-  broadcastState.sentCount = 0;
-  broadcastState.totalMembers = realTargetCount;
-  broadcastState.startTime = Date.now();
+        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
 
-  // Show UI Progress Box
-  document.getElementById("broadcast-progress-box").classList.remove("hidden");
-  document.getElementById("btn-broadcast").disabled = true;
-  document.getElementById("btn-resume-broadcast").classList.add("hidden");
-  document.getElementById("btn-pause-broadcast").classList.remove("hidden");
-
-  runBroadcastLoop();
-}
-
-async function runBroadcastLoop() {
-  if (!broadcastState.isBroadcasting) return;
-
-  // Check Network Connection
-  if (!navigator.onLine) {
-    updateProgressUI("status-paused", "🔴 Network Disconnected", "Retrying automatically when online...");
-    await new Promise(r => setTimeout(r, 3000));
-    return runBroadcastLoop();
-  }
-
-  try {
-    updateProgressUI("status-running", "🟢 Broadcasting...", "Delivering emergency alert via FCM Topics...");
-
-    const response = await fetch(GAS_BACKEND_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "broadcastEmergencyAlert",
-        payload: broadcastState.payload
-      })
-    });
-
-    const res = await response.json();
-
-    if (res.success) {
-      // INSTANT COMPLETION TO REAL COUNT
-      broadcastState.sentCount = broadcastState.totalMembers;
-      updateProgressUI("status-completed", "✅ Broadcast Completed!", "All messages delivered.");
-      document.getElementById("btn-broadcast").disabled = false;
-      document.getElementById("btn-pause-broadcast").classList.add("hidden");
-      
-      await showModal("⚡", "Broadcast Delivered", `Alert dispatched successfully to ${broadcastState.totalMembers.toLocaleString()} registered member(s) in 1 second!`);
-    } else {
-      const actualError = res.error || "Server Busy";
-      updateProgressUI("status-paused", "⚠️ " + actualError, "Retrying in 3 seconds...");
-      await new Promise(r => setTimeout(r, 3000));
-      runBroadcastLoop();
-    }
-  } catch (err) {
-    updateProgressUI("status-paused", "🔴 Interrupted - Retrying", "Reconnecting to server...");
-    await new Promise(r => setTimeout(r, 3000));
-    runBroadcastLoop();
-  }
-}
-
-    function pauseBroadcast() {
-      broadcastState.isPaused = true;
-      document.getElementById("btn-pause-broadcast").classList.add("hidden");
-      document.getElementById("btn-resume-broadcast").classList.remove("hidden");
-    }
-
-    function resumeBroadcast() {
-      broadcastState.isPaused = false;
-      document.getElementById("btn-resume-broadcast").classList.add("hidden");
-      document.getElementById("btn-pause-broadcast").classList.remove("hidden");
-      runBroadcastLoop();
-    }
-
-    function updateProgressUI(badgeClass, statusText, etaText) {
-      const percent = Math.min(100, Math.round((broadcastState.sentCount / broadcastState.totalMembers) * 100));
-      
-      document.getElementById("progress-bar-fill").style.width = percent + "%";
-      document.getElementById("progress-text-counter").textContent = `${broadcastState.sentCount.toLocaleString()} / ${broadcastState.totalMembers.toLocaleString()} Members Sent`;
-      document.getElementById("progress-text-percent").textContent = percent + "%";
-      document.getElementById("progress-text-eta").textContent = etaText;
-      
-      const badge = document.getElementById("progress-status-badge");
-      badge.className = `progress-status-badge ${badgeClass}`;
-      badge.textContent = statusText;
-    }
-
-    function getETAText() {
-      if (broadcastState.sentCount === 0) return "⏱️ Calculating remaining time...";
-      const elapsedSec = (Date.now() - broadcastState.startTime) / 1000;
-      const rate = broadcastState.sentCount / elapsedSec;
-      const remainingSec = Math.round((broadcastState.totalMembers - broadcastState.sentCount) / rate);
-      return `⏱️ Estimated time remaining: ${remainingSec} seconds`;
+        if (res.success) {
+          alert('Alert Dispatched Successfully!\nTargeted: ' + res.summary.totalTargeted + '\nDelivered: ' + res.summary.totalSent);
+        } else {
+          alert("Dispatch Failed: " + res.error);
+        }
+      } catch (e) {
+        setBtnLoading("btn-broadcast", false, "⚡ BROADCAST EMERGENCY ALERT NOW");
+        alert("Network Error: " + e.message);
+      }
     }
 
     async function loadSafetyLogs() {
@@ -1305,8 +1055,7 @@ async function runBroadcastLoop() {
 
     async function markStatusResolved(statusId, resolutionType) {
       const confirmMsg = resolutionType === 'RESOLVED_OK' ? "Mark this member status as Reviewed/OK?" : "Confirm that Emergency Assistance/Rescue has been dispatched?";
-      const confirmed = await showConfirm(resolutionType === 'RESOLVED_OK' ? "💚" : "🚨", "Resolve Safety Signal", confirmMsg);
-      if (!confirmed) return;
+      if (!confirm(confirmMsg)) return;
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
@@ -1314,20 +1063,18 @@ async function runBroadcastLoop() {
           body: JSON.stringify({
             action: "resolveEmergencyStatus",
             statusId: statusId,
-            resolution: resolutionType,
-            officerId: currentOfficer ? currentOfficer.officerId : 'OFFICER'
+            resolution: resolutionType
           })
         });
         const res = await response.json();
 
         if (res.success) {
-          showToast("✅ Status Updated");
           loadSafetyLogs();
         } else {
-          await showModal("❌", "Error", res.error);
+          alert("Error: " + res.error);
         }
       } catch (e) {
-        await showModal("⚠️", "Network Error", e.message);
+        alert("Network Error: " + e.message);
       }
     }
 
@@ -1345,3 +1092,4 @@ async function runBroadcastLoop() {
   </script>
 </body>
 </html>
+
