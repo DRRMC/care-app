@@ -883,16 +883,18 @@ let broadcastState = {
 
       try {
         const response = await fetch(GAS_BACKEND_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "registerOfficer",
-            officerId: officerId,
-            memberId: memberId,
-            role: role,
-            password: password,
-            creatorId: currentOfficer ? currentOfficer.officerId : 'ADMIN'
-          })
-        });
+            method: "POST",
+            body: JSON.stringify({
+              action: "broadcastEmergencyAlert",
+              title: broadcastState.payload.title,
+              message: broadcastState.payload.message,
+              category: broadcastState.payload.category,
+              priority: broadcastState.payload.priority,
+              targetType: broadcastState.payload.targetType,
+              targetValue: broadcastState.payload.targetValue,
+              senderId: broadcastState.payload.senderId
+            })
+          });
         const res = await response.json();
 
         setBtnLoading("btn-register-officer", false, "➕ REGISTER OFFICER & SAVE TO GOOGLE SHEETS");
