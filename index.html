@@ -432,7 +432,7 @@
       return cleaned.substring(cleaned.length - 5);
     }
 
-    // 1. SEND UNLIMITED FIREBASE AUTH MAGIC LINK
+    // 1. SEND UNLIMITED FIREBASE AUTH MAGIC LINK (FIXED URL CONTINUE URI)
     async function sendFirebaseMagicLink() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
@@ -450,8 +450,9 @@
 
       setBtnLoading("btn-request-magic-link", true, "📧 Sending Login Link...");
 
+      // FIX: Use GAS_BACKEND_URL so Firebase matches script.google.com in Authorized Domains!
       const actionCodeSettings = {
-        url: window.location.href,
+        url: GAS_BACKEND_URL,
         handleCodeInApp: true
       };
 
