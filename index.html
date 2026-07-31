@@ -182,17 +182,17 @@
     <div id="view-login" class="card">
       <h2>Member Portal Login</h2>
       
-      <!-- STEP 1: MEMBER ID & EMAIL -->
+      <!-- STEP 1: MEMBER ID & @asaphil.org EMAIL -->
       <div id="otp-step-1">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          Enter your 5-Digit Member ID and registered email to receive a 6-Digit Verification PIN.
+          Enter your 5-Digit Member ID and official <strong>@asaphil.org</strong> email address.
         </p>
         <div class="form-group">
           <label for="input-member-id">Member ID (5 Digits)*</label>
           <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: 800;">
         </div>
         <div class="form-group">
-          <label for="input-member-email">Email Address*</label>
+          <label for="input-member-email">Official Email (@asaphil.org)*</label>
           <input type="email" id="input-member-email" placeholder="e.g. member@asaphil.org">
         </div>
         
@@ -208,7 +208,7 @@
       <!-- STEP 2: OTP INPUT FORM -->
       <div id="otp-step-2" class="hidden">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
-          We sent a 6-digit PIN to <strong id="display-masked-email">***@***.com</strong>.
+          We sent a 6-digit PIN to <strong id="display-masked-email">***@asaphil.org</strong>.
         </p>
         <div class="form-group">
           <label for="input-otp-pin">6-Digit Verification PIN*</label>
@@ -443,18 +443,24 @@
       return cleaned.substring(cleaned.length - 5);
     }
 
-    // 1. REQUEST EMAIL OTP
+    // 1. REQUEST EMAIL OTP (CLIENT VALIDATION FOR @asaphil.org)
     async function requestEmailOTP() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
-      const email = document.getElementById("input-member-email").value.trim();
+      const email = document.getElementById("input-member-email").value.trim().toLowerCase();
 
       if (!formattedId || formattedId.length !== 5) {
         showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Member ID.");
         return;
       }
-      if (!email || !email.includes("@")) {
-        showModal("⚠️", "Invalid Email", "Please enter a valid email address.");
+
+      // CLIENT-SIDE DOMAIN CHECK
+      if (!email || !email.endsWith("@asaphil.org")) {
+        showModal(
+          "⚠️", 
+          "Invalid Email Domain", 
+          "Access Restricted: Only official email addresses ending in <strong>@asaphil.org</strong> are accepted."
+        );
         return;
       }
 
@@ -468,7 +474,7 @@
           document.getElementById("display-masked-email").textContent = res.maskedEmail;
           document.getElementById("otp-step-1").classList.add("hidden");
           document.getElementById("otp-step-2").classList.remove("hidden");
-          showToast("PIN sent to your email!");
+          showToast("PIN sent to your @asaphil.org inbox!");
         } else {
           showModal("❌", "Request Failed", res.error);
         }
@@ -481,7 +487,7 @@
     // 2. VERIFY EMAIL OTP
     async function verifyEmailOTP() {
       const formattedId = formatToFiveDigits(document.getElementById("input-member-id").value);
-      const email = document.getElementById("input-member-email").value.trim();
+      const email = document.getElementById("input-member-email").value.trim().toLowerCase();
       const otp = document.getElementById("input-otp-pin").value.trim();
 
       if (!otp || otp.length !== 6) {
