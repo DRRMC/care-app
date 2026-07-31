@@ -184,11 +184,11 @@
       
       <div id="login-form-box">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          Enter your 5-Digit Member ID, Email, and CP Number to request access.
+          Enter your Member ID, Email, and CP Number to request access.
         </p>
         <div class="form-group">
-          <label for="input-member-id">Member ID (5 Digits)*</label>
-          <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: 800;">
+          <label for="input-member-id">Member ID*</label>
+          <input type="text" id="input-member-id" placeholder="e.g. 18243 or 100552" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: 800;">
         </div>
         <div class="form-group">
           <label for="input-member-email">Email Address*</label>
@@ -322,12 +322,9 @@
       <!-- DIAGNOSTICS CARD -->
       <div class="card">
         <h2>System Diagnostics</h2>
-        <button id="btn-test-alert" class="btn btn-secondary" onclick="triggerTestAlert()">
-          ⚡ Test Emergency Notification
-        </button>
-
         <div class="device-info-box">
           <strong>📱 Device Binding Info:</strong><br>
+          • <strong>Platform:</strong> APECC DRRMC Engine<br>
           • <strong>Member ID:</strong> <span id="diag-member-id">--</span><br>
           • <strong>Device Type:</strong> <span id="diag-device-type">--</span><br>
           • <strong>Browser:</strong> <span id="diag-browser">--</span>
@@ -354,7 +351,8 @@
   <div id="toast">Message notification</div>
 
   <script>
-    const GAS_BACKEND_URL = "https://script.google.com/macros/s/AKfycbyd1L-Cf-ZfoZiVCznAnONiCxuu9YaziM4H37R3PR0JeH8-HBYn6RAXagmb5DXdMm2T/exec";
+    // REPLACE WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+    const GAS_BACKEND_URL = "YOUR_DEPLOYED_GAS_WEB_APP_URL_HERE";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC3oVT1UjGLksc7pws6GMSkZC2L0Puj9Mk",
@@ -375,7 +373,7 @@
     document.addEventListener("DOMContentLoaded", async () => {
       populateBranchDropdown();
 
-      const savedMemberId = localStorage.getItem("care_member_id");
+      const savedMemberId = localStorage.getItem("apecc_member_id");
       if (savedMemberId) {
         await checkStatusAndLoad(savedMemberId);
       }
@@ -436,23 +434,22 @@
       setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
-    function formatToFiveDigits(val) {
+    function formatMemberIdClient(val) {
       if (!val) return "";
       let cleaned = val.replace(/\D/g, '');
       if (!cleaned) return "";
       while (cleaned.length < 5) cleaned = "0" + cleaned;
-      return cleaned.substring(cleaned.length - 5);
+      return cleaned;
     }
 
-    // 1. SUBMIT ACCESS REQUEST
     async function submitAccessRequest() {
       const rawId = document.getElementById("input-member-id").value;
-      const formattedId = formatToFiveDigits(rawId);
+      const formattedId = formatMemberIdClient(rawId);
       const email = document.getElementById("input-member-email").value.trim().toLowerCase();
       const cpNumber = document.getElementById("input-member-cp").value.trim();
 
-      if (!formattedId || formattedId.length !== 5) {
-        showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Member ID.");
+      if (!formattedId) {
+        showModal("⚠️", "Invalid Member ID", "Please enter a valid Member ID.");
         return;
       }
       if (!email || !email.includes("@")) {
@@ -477,7 +474,7 @@
         setBtnLoading("btn-submit-request", false, "Submit Access Request");
 
         if (res.success) {
-          localStorage.setItem("care_member_id", formattedId);
+          localStorage.setItem("apecc_member_id", formattedId);
           showWaitingScreen(formattedId);
           startApprovalPolling(formattedId);
         } else {
@@ -497,18 +494,17 @@
 
     function cancelPendingRequest() {
       if (pollingInterval) clearInterval(pollingInterval);
-      localStorage.removeItem("care_member_id");
+      localStorage.removeItem("apecc_member_id");
       document.getElementById("waiting-approval-box").classList.add("hidden");
       document.getElementById("login-form-box").classList.remove("hidden");
     }
 
-    // 2. CHECK APPROVAL STATUS (BACKGROUND POLLING)
     function startApprovalPolling(formattedId) {
       if (pollingInterval) clearInterval(pollingInterval);
 
       pollingInterval = setInterval(async () => {
         await checkStatusAndLoad(formattedId);
-      }, 5000); // Polls every 5 seconds
+      }, 5000);
     }
 
     async function checkStatusAndLoad(formattedId) {
@@ -531,8 +527,8 @@
             showWaitingScreen(formattedId);
           } else if (res.member.status === "REJECTED") {
             if (pollingInterval) clearInterval(pollingInterval);
-            localStorage.removeItem("care_member_id");
-            showModal("❌", "Access Rejected", "Your access request was rejected by DRRMC Officers. Contact your branch.");
+            localStorage.removeItem("apecc_member_id");
+            showModal("❌", "Access Rejected", "Your access request was rejected by APECC DRRMC Officers. Contact your branch.");
             cancelPendingRequest();
           }
         }
@@ -690,16 +686,6 @@
           loadLinkedDevices();
         }
       } catch (err) { tokenDisplay.textContent = "FCM Registration Warning: " + err.message; }
-    }
-
-    async function triggerTestAlert() {
-      const token = document.getElementById("token-display").textContent;
-      if (!token || token.length < 20) { showModal("⚠️", "No Token", "Please enable emergency alerts first."); return; }
-      setBtnLoading("btn-test-alert", true, "Test Emergency Notification");
-      const res = await sendToBackend({ action: "sendTestAlert", token: token });
-      setBtnLoading("btn-test-alert", false, "Test Emergency Notification");
-      if (res.success && res.response.success) showModal("🔔", "Test Dispatched", "Test alert successfully sent!");
-      else showModal("❌", "Dispatch Error", JSON.stringify(res));
     }
 
     async function sendToBackend(payload) {
