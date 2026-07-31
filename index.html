@@ -165,9 +165,7 @@
     #toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 
-  <!-- FIREBASE SDKs (APP, AUTH, MESSAGING) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 </head>
 <body>
@@ -180,29 +178,49 @@
 
   <div class="container">
 
-    <!-- VIEW 1: MEMBER LOGIN & FIREBASE AUTH MAGIC LINK -->
+    <!-- VIEW 1: MEMBER ACCESS REQUEST FORM -->
     <div id="view-login" class="card">
-      <h2>Member Portal Login</h2>
+      <h2>Member Portal Access</h2>
       
       <div id="login-form-box">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-          Enter your 5-Digit Member ID and official <strong>@asaphil.org</strong> email address to receive an instant Login Link.
+          Enter your 5-Digit Member ID, Email, and CP Number to request access.
         </p>
         <div class="form-group">
           <label for="input-member-id">Member ID (5 Digits)*</label>
           <input type="text" id="input-member-id" maxlength="5" placeholder="e.g. 18243" style="font-size: 1.2rem; letter-spacing: 2px; text-align: center; font-weight: 800;">
         </div>
         <div class="form-group">
-          <label for="input-member-email">Official Email (@asaphil.org)*</label>
+          <label for="input-member-email">Email Address*</label>
           <input type="email" id="input-member-email" placeholder="e.g. member@asaphil.org">
+        </div>
+        <div class="form-group">
+          <label for="input-member-cp">CP Number (Mobile)*</label>
+          <input type="tel" id="input-member-cp" placeholder="e.g. 09171234567">
         </div>
         
         <div style="font-size: 0.75rem; color: #666; margin-bottom: 14px; text-align: justify; line-height: 1.3;">
           🔒 <strong>Data Privacy Notice:</strong> By submitting, you consent under RA 10173 (Data Privacy Act of 2012) to allow APECC DRRMC to process your location for emergency response.
         </div>
 
-        <button id="btn-request-magic-link" class="btn" onclick="sendFirebaseMagicLink()">
-          <span>📧 Send Login Verification Link</span>
+        <button id="btn-submit-request" class="btn" onclick="submitAccessRequest()">
+          <span>Submit Access Request</span>
+        </button>
+      </div>
+
+      <!-- WAITING SCREEN FOR PENDING APPROVAL -->
+      <div id="waiting-approval-box" class="hidden" style="text-align: center; padding: 20px 0;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">⏳</div>
+        <h3 style="font-size: 1.1rem; color: #ef6c00; margin-bottom: 8px;">Pending Officer Approval</h3>
+        <p style="font-size: 0.88rem; color: #555; line-height: 1.4; margin-bottom: 16px;">
+          Your request for Member ID <strong id="pending-display-id">#00000</strong> has been submitted.<br><br>
+          Please wait while an APECC DRRMC Officer approves your device access.
+        </p>
+        <div class="spinner" style="border-color: #ef6c00; border-top-color: transparent; width: 24px; height: 24px; margin: 0 auto 10px;"></div>
+        <div style="font-size: 0.78rem; color: #888;">Checking status automatically...</div>
+
+        <button class="btn" style="background: transparent; color: var(--text-muted); box-shadow: none; margin-top: 16px;" onclick="cancelPendingRequest()">
+          <span>← Cancel Request</span>
         </button>
       </div>
 
@@ -350,22 +368,16 @@
     const VAPID_KEY = "BLcDdosDD6sfwNQnzhu5IR-MlaNP-IZlG5uaJbBuqx_JHTYLeN643eHILY4e2oMTk8OXIK5BFFkKeiLUtMopRgc";
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const messaging = firebase.messaging();
     let currentMember = null;
+    let pollingInterval = null;
 
     document.addEventListener("DOMContentLoaded", async () => {
       populateBranchDropdown();
 
-      // Check if user clicked the Firebase Magic Link in their email
-      if (auth.isSignInWithEmailLink(window.location.href)) {
-        await handleFirebaseMagicLinkCompletion();
-        return;
-      }
-
       const savedMemberId = localStorage.getItem("care_member_id");
       if (savedMemberId) {
-        await autoLoginSavedUser(savedMemberId);
+        await checkStatusAndLoad(savedMemberId);
       }
     });
 
@@ -432,103 +444,99 @@
       return cleaned.substring(cleaned.length - 5);
     }
 
-    // 1. SEND UNLIMITED FIREBASE AUTH MAGIC LINK (FIXED URL CONTINUE URI)
-    async function sendFirebaseMagicLink() {
+    // 1. SUBMIT ACCESS REQUEST
+    async function submitAccessRequest() {
       const rawId = document.getElementById("input-member-id").value;
       const formattedId = formatToFiveDigits(rawId);
       const email = document.getElementById("input-member-email").value.trim().toLowerCase();
+      const cpNumber = document.getElementById("input-member-cp").value.trim();
 
       if (!formattedId || formattedId.length !== 5) {
         showModal("⚠️", "Invalid Member ID", "Please enter a valid 5-Digit Member ID.");
         return;
       }
-
-      if (!email || !email.endsWith("@asaphil.org")) {
-        showModal("⚠️", "Invalid Email", "Access Restricted: Only official <strong>@asaphil.org</strong> email addresses are allowed.");
+      if (!email || !email.includes("@")) {
+        showModal("⚠️", "Invalid Email", "Please enter a valid email address.");
+        return;
+      }
+      if (!cpNumber || cpNumber.length < 10) {
+        showModal("⚠️", "Invalid CP Number", "Please enter a valid CP/Mobile Number (e.g. 09171234567).");
         return;
       }
 
-      setBtnLoading("btn-request-magic-link", true, "📧 Sending Login Link...");
-
-      // FIX: Use GAS_BACKEND_URL so Firebase matches script.google.com in Authorized Domains!
-      const actionCodeSettings = {
-        url: GAS_BACKEND_URL,
-        handleCodeInApp: true
-      };
+      setBtnLoading("btn-submit-request", true, "Submit Access Request");
 
       try {
-        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
-        window.localStorage.setItem('emailForSignIn', email);
-        window.localStorage.setItem('pendingMemberId', formattedId);
-
-        setBtnLoading("btn-request-magic-link", false, "📧 Send Login Verification Link");
-        showModal("📧", "Login Link Sent!", `We sent an instant sign-in link to <strong>${email}</strong>.<br><br>Please open your email and tap the link to unlock your portal.`);
-      } catch (err) {
-        setBtnLoading("btn-request-magic-link", false, "📧 Send Login Verification Link");
-        showModal("❌", "Firebase Auth Error", err.message);
-      }
-    }
-
-    // 2. HANDLE MAGIC LINK RETURN FROM EMAIL
-    async function handleFirebaseMagicLinkCompletion() {
-      showModal("🔄", "Verifying Magic Link", "Unlocking your APECC DRRMC account...");
-
-      let email = window.localStorage.getItem('emailForSignIn');
-      let memberId = window.localStorage.getItem('pendingMemberId') || "00000";
-
-      if (!email) {
-        email = window.prompt('Please confirm your @asaphil.org email for verification:');
-      }
-
-      try {
-        const result = await auth.signInWithEmailLink(email, window.location.href);
-        window.localStorage.removeItem('emailForSignIn');
-        window.localStorage.removeItem('pendingMemberId');
-
-        // Link with Google Sheets Backend
         const res = await sendToBackend({
-          action: "verifyFirebaseAuthMember",
-          memberId: memberId,
+          action: "submitAccessRequest",
+          memberId: formattedId,
           email: email,
-          firebaseUid: result.user.uid
+          cpNumber: cpNumber
         });
 
-        closeModal();
+        setBtnLoading("btn-submit-request", false, "Submit Access Request");
 
         if (res.success) {
-          localStorage.setItem("care_member_id", res.member.member_id);
-          currentMember = res.member;
-          populateDashboard(currentMember);
-
-          document.getElementById("view-login").classList.add("hidden");
-          document.getElementById("view-dashboard").classList.remove("hidden");
-          showToast("Welcome Member #" + res.member.member_id);
-
-          await autoRequestNotificationPermission();
-          await loadLinkedDevices();
+          localStorage.setItem("care_member_id", formattedId);
+          showWaitingScreen(formattedId);
+          startApprovalPolling(formattedId);
         } else {
-          showModal("❌", "Backend Verification Error", res.error);
+          showModal("❌", "Request Blocked", res.error);
         }
-      } catch (err) {
-        closeModal();
-        showModal("❌", "Verification Error", err.message);
+      } catch (e) {
+        setBtnLoading("btn-submit-request", false, "Submit Access Request");
+        showModal("⚠️", "Network Error", e.message);
       }
     }
 
-    async function autoLoginSavedUser(formattedId) {
+    function showWaitingScreen(formattedId) {
+      document.getElementById("login-form-box").classList.add("hidden");
+      document.getElementById("waiting-approval-box").classList.remove("hidden");
+      document.getElementById("pending-display-id").textContent = "#" + formattedId;
+    }
+
+    function cancelPendingRequest() {
+      if (pollingInterval) clearInterval(pollingInterval);
+      localStorage.removeItem("care_member_id");
+      document.getElementById("waiting-approval-box").classList.add("hidden");
+      document.getElementById("login-form-box").classList.remove("hidden");
+    }
+
+    // 2. CHECK APPROVAL STATUS (BACKGROUND POLLING)
+    function startApprovalPolling(formattedId) {
+      if (pollingInterval) clearInterval(pollingInterval);
+
+      pollingInterval = setInterval(async () => {
+        await checkStatusAndLoad(formattedId);
+      }, 5000); // Polls every 5 seconds
+    }
+
+    async function checkStatusAndLoad(formattedId) {
       try {
-        const res = await sendToBackend({ action: "verifyFirebaseAuthMember", memberId: formattedId, bypassLink: true });
-        if (res.success && res.member && res.member.status === "ACTIVE") {
-          currentMember = res.member;
-          populateDashboard(currentMember);
-          document.getElementById("view-login").classList.add("hidden");
-          document.getElementById("view-dashboard").classList.remove("hidden");
-          await autoRequestNotificationPermission();
-          await loadLinkedDevices();
-        } else {
-          localStorage.removeItem("care_member_id");
+        const res = await sendToBackend({ action: "checkApprovalStatus", memberId: formattedId });
+
+        if (res.success && res.member) {
+          if (res.member.status === "ACTIVE") {
+            if (pollingInterval) clearInterval(pollingInterval);
+            currentMember = res.member;
+            populateDashboard(currentMember);
+
+            document.getElementById("view-login").classList.add("hidden");
+            document.getElementById("view-dashboard").classList.remove("hidden");
+            showToast("Account Approved! Welcome Member #" + formattedId);
+
+            await autoRequestNotificationPermission();
+            await loadLinkedDevices();
+          } else if (res.member.status === "PENDING") {
+            showWaitingScreen(formattedId);
+          } else if (res.member.status === "REJECTED") {
+            if (pollingInterval) clearInterval(pollingInterval);
+            localStorage.removeItem("care_member_id");
+            showModal("❌", "Access Rejected", "Your access request was rejected by DRRMC Officers. Contact your branch.");
+            cancelPendingRequest();
+          }
         }
-      } catch (e) { console.warn("Auto login failed:", e); }
+      } catch (e) { console.warn("Polling status check failed:", e); }
     }
 
     async function loadLinkedDevices() {
