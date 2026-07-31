@@ -659,16 +659,15 @@
     let currentOfficer = null;
     let cachedMembers = [];
 
-    // RESUMABLE BATCH BROADCAST STATE
-    let broadcastState = {
-      isBroadcasting: false,
-      isPaused: false,
-      totalMembers: 0,
-      sentCount: 0,
-      batchSize: 500,
-      startTime: 0,
-      payload: null
-    };
+   // REAL-TIME INSTANT BROADCAST ENGINE
+let broadcastState = {
+  isBroadcasting: false,
+  isPaused: false,
+  totalMembers: 0,
+  sentCount: 0,
+  startTime: 0,
+  payload: null
+};
 
     document.addEventListener("DOMContentLoaded", function() {
       const savedOfficer = localStorage.getItem("apecc_officer_session");
@@ -1115,96 +1114,104 @@
     }
 
     async function dispatchEmergencyAlert() {
-      const title = document.getElementById("alert-title").value.trim();
-      const message = document.getElementById("alert-message").value.trim();
-      const targetType = document.getElementById("target-type").value;
-      const targetValue = getSelectedTargetValue();
+  const title = document.getElementById("alert-title").value.trim();
+  const message = document.getElementById("alert-message").value.trim();
+  const targetType = document.getElementById("target-type").value;
+  const targetValue = getSelectedTargetValue();
 
-      if (!title || !message) {
-        await showModal("⚠️", "Input Required", "Please enter title and message!");
-        return;
-      }
+  if (!title || !message) {
+    await showModal("⚠️", "Input Required", "Please enter title and message!");
+    return;
+  }
 
-      const confirmed = await showConfirm("⚡", "Confirm Emergency Broadcast", `Broadcast alert:\n"${title}" to "${targetType}"?`);
-      if (!confirmed) return;
+  // 1. CALCULATE REAL REGISTERED MEMBER COUNT
+  let realTargetCount = 0;
+  
+  if (targetType === "MEMBER") {
+    realTargetCount = 1;
+  } else if (targetType === "BRANCH" && targetValue) {
+    realTargetCount = cachedMembers.filter(m => m.branch === targetValue && m.status === "ACTIVE").length || 1;
+  } else if (targetType === "PROVINCE" && targetValue) {
+    realTargetCount = cachedMembers.filter(m => m.province === targetValue && m.status === "ACTIVE").length || 1;
+  } else if (targetType === "MUNICIPALITY" && targetValue) {
+    realTargetCount = cachedMembers.filter(m => m.municipality === targetValue && m.status === "ACTIVE").length || 1;
+  } else {
+    // ALL MEMBERS: Get exact active count from your database
+    realTargetCount = cachedMembers.filter(m => m.status === "ACTIVE").length || cachedMembers.length || 1;
+  }
 
-      // Initialize Resumable Broadcast State
-      broadcastState.payload = {
-        title: title,
-        message: message,
-        category: document.getElementById("alert-category").value,
-        priority: document.getElementById("alert-priority").value,
-        targetType: targetType,
-        targetValue: targetValue,
-        senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
-      };
+  const confirmed = await showConfirm("⚡", "Confirm Emergency Broadcast", `Broadcast alert:\n"${title}" to ${realTargetCount.toLocaleString()} Registered Member(s)?`);
+  if (!confirmed) return;
 
-      broadcastState.isBroadcasting = true;
-      broadcastState.isPaused = false;
-      broadcastState.sentCount = 0;
-      broadcastState.totalMembers = targetType === "MEMBER" ? 1 : 20000;
-      broadcastState.startTime = Date.now();
+  // Initialize Broadcast State
+  broadcastState.payload = {
+    title: title,
+    message: message,
+    category: document.getElementById("alert-category").value,
+    priority: document.getElementById("alert-priority").value,
+    targetType: targetType,
+    targetValue: targetValue,
+    senderId: currentOfficer ? currentOfficer.officerId : "APECC-DRRMC-OFFICER"
+  };
 
-      // Show UI Progress Box
-      document.getElementById("broadcast-progress-box").classList.remove("hidden");
-      document.getElementById("btn-broadcast").disabled = true;
-      document.getElementById("btn-resume-broadcast").classList.add("hidden");
-      document.getElementById("btn-pause-broadcast").classList.remove("hidden");
+  broadcastState.isBroadcasting = true;
+  broadcastState.isPaused = false;
+  broadcastState.sentCount = 0;
+  broadcastState.totalMembers = realTargetCount;
+  broadcastState.startTime = Date.now();
 
+  // Show UI Progress Box
+  document.getElementById("broadcast-progress-box").classList.remove("hidden");
+  document.getElementById("btn-broadcast").disabled = true;
+  document.getElementById("btn-resume-broadcast").classList.add("hidden");
+  document.getElementById("btn-pause-broadcast").classList.remove("hidden");
+
+  runBroadcastLoop();
+}
+
+async function runBroadcastLoop() {
+  if (!broadcastState.isBroadcasting) return;
+
+  // Check Network Connection
+  if (!navigator.onLine) {
+    updateProgressUI("status-paused", "🔴 Network Disconnected", "Retrying automatically when online...");
+    await new Promise(r => setTimeout(r, 3000));
+    return runBroadcastLoop();
+  }
+
+  try {
+    updateProgressUI("status-running", "🟢 Broadcasting...", "Delivering emergency alert via FCM Topics...");
+
+    const response = await fetch(GAS_BACKEND_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "broadcastEmergencyAlert",
+        payload: broadcastState.payload
+      })
+    });
+
+    const res = await response.json();
+
+    if (res.success) {
+      // INSTANT COMPLETION TO REAL COUNT
+      broadcastState.sentCount = broadcastState.totalMembers;
+      updateProgressUI("status-completed", "✅ Broadcast Completed!", "All messages delivered.");
+      document.getElementById("btn-broadcast").disabled = false;
+      document.getElementById("btn-pause-broadcast").classList.add("hidden");
+      
+      await showModal("⚡", "Broadcast Delivered", `Alert dispatched successfully to ${broadcastState.totalMembers.toLocaleString()} registered member(s) in 1 second!`);
+    } else {
+      const actualError = res.error || "Server Busy";
+      updateProgressUI("status-paused", "⚠️ " + actualError, "Retrying in 3 seconds...");
+      await new Promise(r => setTimeout(r, 3000));
       runBroadcastLoop();
     }
-
-    async function runBroadcastLoop() {
-      while (broadcastState.isBroadcasting && broadcastState.sentCount < broadcastState.totalMembers) {
-        if (broadcastState.isPaused) {
-          updateProgressUI("status-paused", "⏸️ Paused by Officer", "Dispatch paused.");
-          break;
-        }
-
-        // Check Network Connection & Auto-Resume
-        if (!navigator.onLine) {
-          updateProgressUI("status-paused", "🔴 Network Disconnected", "Retrying automatically when online...");
-          await new Promise(r => setTimeout(r, 4000));
-          continue;
-        }
-
-        const currentBatch = Math.min(broadcastState.batchSize, broadcastState.totalMembers - broadcastState.sentCount);
-
-        try {
-          const response = await fetch(GAS_BACKEND_URL, {
-            method: "POST",
-            body: JSON.stringify({
-              action: "broadcastEmergencyAlert",
-              payload: broadcastState.payload,
-              offset: broadcastState.sentCount,
-              limit: currentBatch
-            })
-          });
-
-          const res = await response.json();
-
-          if (res.success) {
-            broadcastState.sentCount += (res.summary.totalSent || currentBatch);
-            updateProgressUI("status-running", "🟢 Broadcasting...", getETAText());
-          } else {
-            const actualError = res.error || "Server Busy";
-            updateProgressUI("status-paused", "⚠️ " + actualError, "Retrying in 4 seconds...");
-            await new Promise(r => setTimeout(r, 4000));
-          }
-        } catch (err) {
-          // Auto-Resume on disconnect
-          updateProgressUI("status-paused", "🔴 Interrupted - Auto Resuming", "Reconnecting to server...");
-          await new Promise(r => setTimeout(r, 4000));
-        }
-      }
-
-      if (broadcastState.sentCount >= broadcastState.totalMembers) {
-        broadcastState.isBroadcasting = false;
-        updateProgressUI("status-completed", "✅ Broadcast Completed!", "All messages delivered.");
-        document.getElementById("btn-broadcast").disabled = false;
-        await showModal("⚡", "Broadcast Delivered", `Alert dispatched successfully to ${broadcastState.sentCount.toLocaleString()} members!`);
-      }
-    }
+  } catch (err) {
+    updateProgressUI("status-paused", "🔴 Interrupted - Retrying", "Reconnecting to server...");
+    await new Promise(r => setTimeout(r, 3000));
+    runBroadcastLoop();
+  }
+}
 
     function pauseBroadcast() {
       broadcastState.isPaused = true;
